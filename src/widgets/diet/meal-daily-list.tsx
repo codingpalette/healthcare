@@ -6,6 +6,14 @@ import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Coffee, Sun, Moon, App
 import type { Meal, MealType } from "@/entities/meal"
 import { useMyMeals, useDeleteMeal } from "@/features/diet"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Card,
   CardHeader,
   CardTitle,
@@ -52,6 +60,7 @@ export function MealDailyList() {
   const [selectedDate, setSelectedDate] = useState(today)
   const [formOpen, setFormOpen] = useState(false)
   const [editMeal, setEditMeal] = useState<Meal | undefined>()
+  const [mealToDelete, setMealToDelete] = useState<Meal | undefined>()
 
   const { data: meals, isLoading } = useMyMeals(selectedDate, selectedDate)
   const deleteMeal = useDeleteMeal()
@@ -77,10 +86,14 @@ export function MealDailyList() {
     setFormOpen(true)
   }
 
-  function handleDelete(id: string) {
-    if (confirm("식단을 삭제하시겠습니까?")) {
-      deleteMeal.mutate(id)
-    }
+  function handleDelete(meal: Meal) {
+    setMealToDelete(meal)
+  }
+
+  function handleConfirmDelete() {
+    if (!mealToDelete) return
+    deleteMeal.mutate(mealToDelete.id)
+    setMealToDelete(undefined)
   }
 
   return (
@@ -207,13 +220,15 @@ export function MealDailyList() {
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => handleEdit(meal)}
+                        aria-label="식단 수정"
                       >
                         <Pencil className="size-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => handleDelete(meal.id)}
+                        onClick={() => handleDelete(meal)}
+                        aria-label="식단 삭제"
                       >
                         <Trash2 className="size-3.5 text-destructive" />
                       </Button>
@@ -235,6 +250,32 @@ export function MealDailyList() {
         editMeal={editMeal}
         defaultDate={selectedDate}
       />
+
+      <AlertDialog
+        open={!!mealToDelete}
+        onOpenChange={(open) => {
+          if (!open) setMealToDelete(undefined)
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>식단을 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              삭제한 식단 기록은 복구할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMeal.isPending}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteMeal.isPending}
+              onClick={handleConfirmDelete}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

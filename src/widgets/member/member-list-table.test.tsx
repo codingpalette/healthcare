@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, fireEvent, cleanup } from "@testing-library/react"
+import { render, fireEvent, cleanup, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { MemberListTable } from "./member-list-table"
 import type { Profile } from "@/entities/user"
@@ -62,15 +62,19 @@ vi.mock("@/features/member-management", () => ({
   }),
   useAssignTrainer: () => ({
     mutate: vi.fn(),
+    isPending: false,
   }),
   useUnassignTrainer: () => ({
     mutate: vi.fn(),
+    isPending: false,
   }),
   useDeleteMember: () => ({
     mutate: mockDeleteMember,
+    isPending: false,
   }),
   useUpdateRole: () => ({
     mutate: mockChangeRole,
+    isPending: false,
   }),
 }))
 
@@ -191,5 +195,19 @@ describe("MemberListTable", () => {
     const cellTexts = getCellTexts(container)
     expect(cellTexts).toContain("홍길동")
     expect(cellTexts).not.toContain("김철수")
+  })
+
+  it("삭제 액션은 확인 다이얼로그를 거쳐 실행된다", () => {
+    renderTable()
+
+    fireEvent.click(screen.getAllByRole("button", { name: "회원 작업 메뉴" })[0])
+    fireEvent.click(screen.getByText("삭제"))
+
+    expect(screen.getByText("홍길동 유저를 삭제하시겠습니까?")).toBeInTheDocument()
+    expect(screen.getByText("삭제된 유저는 복구할 수 없습니다.")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }))
+
+    expect(mockDeleteMember).toHaveBeenCalledWith("1", expect.any(Object))
   })
 })

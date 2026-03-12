@@ -6,6 +6,14 @@ import { toast } from "sonner"
 import type { Profile } from "@/entities/user"
 import { useMembers, useMyMembers, useAssignTrainer, useUnassignTrainer, useDeleteMember, useUpdateRole } from "@/features/member-management"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Badge,
   Button,
   Input,
@@ -28,17 +36,31 @@ interface MemberListTableProps {
   onEdit: (member: Profile) => void
 }
 
+interface ConfirmAction {
+  title: string
+  description: string
+  actionLabel: string
+  actionVariant?: "default" | "destructive"
+  onConfirm: () => void
+}
+
 export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTableProps) {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer" | "mine">("all")
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const { data: members, isLoading } = useMembers()
   const { data: myMembers } = useMyMembers()
-  const { mutate: deleteMember } = useDeleteMember()
-  const { mutate: changeRole } = useUpdateRole()
-  const { mutate: assign } = useAssignTrainer()
-  const { mutate: unassign } = useUnassignTrainer()
+  const deleteMember = useDeleteMember()
+  const changeRole = useUpdateRole()
+  const assign = useAssignTrainer()
+  const unassign = useUnassignTrainer()
 
   const myMemberIds = new Set((myMembers ?? []).map((m) => m.id))
+  const isConfirmPending =
+    deleteMember.isPending ||
+    changeRole.isPending ||
+    assign.isPending ||
+    unassign.isPending
 
   const filtered = (roleFilter === "mine" ? (myMembers ?? []) : (members ?? [])).filter((m) => {
     if (roleFilter !== "all" && roleFilter !== "mine" && m.role !== roleFilter) return false
@@ -53,40 +75,65 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
   const handleRoleChange = (member: Profile) => {
     const newRole = member.role === "member" ? "trainer" : "member"
     const label = newRole === "trainer" ? "트레이너" : "회원"
-    if (!confirm(`${member.name}님의 권한을 ${label}(으)로 변경하시겠습니까?`)) return
-    changeRole(
-      { memberId: member.id, data: { role: newRole } },
-      {
-        onSuccess: () => toast.success(`${member.name}님의 권한이 ${label}(으)로 변경되었습니다`),
-        onError: (err) => toast.error(err.message),
-      }
-    )
+    setConfirmAction({
+      title: `${member.name}님의 권한을 ${label}(으)로 변경하시겠습니까?`,
+      description: "권한 변경은 즉시 적용됩니다.",
+      actionLabel: "권한 변경",
+      onConfirm: () => {
+        changeRole.mutate(
+          { memberId: member.id, data: { role: newRole } },
+          {
+            onSuccess: () => toast.success(`${member.name}님의 권한이 ${label}(으)로 변경되었습니다`),
+            onError: (err) => toast.error(err.message),
+          }
+        )
+      },
+    })
   }
 
   const handleAssign = (member: Profile) => {
-    if (!confirm(`${member.name}님을 내 회원으로 등록하시겠습니까?`)) return
-    assign(
-      { memberId: member.id, trainerId: currentUserId },
-      {
-        onSuccess: () => toast.success(`${member.name}님이 내 회원으로 등록되었습니다`),
-        onError: (err) => toast.error(err.message),
-      }
-    )
+    setConfirmAction({
+      title: `${member.name}님을 내 회원으로 등록하시겠습니까?`,
+      description: "등록 후 트레이너-회원 연결이 즉시 반영됩니다.",
+      actionLabel: "등록",
+      onConfirm: () => {
+        assign.mutate(
+          { memberId: member.id, trainerId: currentUserId },
+          {
+            onSuccess: () => toast.success(`${member.name}님이 내 회원으로 등록되었습니다`),
+            onError: (err) => toast.error(err.message),
+          }
+        )
+      },
+    })
   }
 
   const handleUnassign = (member: Profile) => {
-    if (!confirm(`${member.name}님을 내 회원에서 해제하시겠습니까?`)) return
-    unassign(member.id, {
-      onSuccess: () => toast.success(`${member.name}님이 내 회원에서 해제되었습니다`),
-      onError: (err) => toast.error(err.message),
+    setConfirmAction({
+      title: `${member.name}님을 내 회원에서 해제하시겠습니까?`,
+      description: "해제 후에는 내 회원 목록에서 바로 제외됩니다.",
+      actionLabel: "해제",
+      onConfirm: () => {
+        unassign.mutate(member.id, {
+          onSuccess: () => toast.success(`${member.name}님이 내 회원에서 해제되었습니다`),
+          onError: (err) => toast.error(err.message),
+        })
+      },
     })
   }
 
   const handleDelete = (member: Profile) => {
-    if (!confirm(`${member.name} 유저를 삭제하시겠습니까?`)) return
-    deleteMember(member.id, {
-      onSuccess: () => toast.success("유저가 삭제되었습니다"),
-      onError: (err) => toast.error(err.message),
+    setConfirmAction({
+      title: `${member.name} 유저를 삭제하시겠습니까?`,
+      description: "삭제된 유저는 복구할 수 없습니다.",
+      actionLabel: "삭제",
+      actionVariant: "destructive",
+      onConfirm: () => {
+        deleteMember.mutate(member.id, {
+          onSuccess: () => toast.success("유저가 삭제되었습니다"),
+          onError: (err) => toast.error(err.message),
+        })
+      },
     })
   }
 
@@ -172,6 +219,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
                         variant="ghost"
                         size="sm"
                         className="size-8 p-0"
+                        aria-label="회원 작업 메뉴"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                       >
                         <MoreHorizontal className="size-4" />
@@ -270,6 +318,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
                             variant="ghost"
                             size="sm"
                             className="size-8 p-0"
+                            aria-label="회원 작업 메뉴"
                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
                           >
                             <MoreHorizontal className="size-4" />
@@ -335,6 +384,30 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
         </div>
         </>
       )}
+
+      <AlertDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => {
+          if (!open) setConfirmAction(null)
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmAction?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmAction?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isConfirmPending}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              variant={confirmAction?.actionVariant ?? "default"}
+              disabled={isConfirmPending}
+              onClick={() => confirmAction?.onConfirm()}
+            >
+              {confirmAction?.actionLabel ?? "확인"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
