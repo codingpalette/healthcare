@@ -104,7 +104,8 @@ export function AttendanceCheckCard() {
               </div>
             </div>
             <Button
-              className="w-full bg-destructive hover:bg-destructive/90"
+              className="w-full"
+              variant="outline"
               onClick={() => checkOutMutation.mutate()}
               disabled={isPending}
             >
@@ -125,7 +126,8 @@ export function AttendanceCheckCard() {
               </div>
             </div>
             <Button
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full"
+              variant="outline"
               onClick={() => checkInMutation.mutate()}
               disabled={isPending}
             >
@@ -144,7 +146,8 @@ export function AttendanceCheckCard() {
               </div>
             </div>
             <Button
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full"
+              variant="outline"
               onClick={() => checkInMutation.mutate()}
               disabled={isPending}
             >

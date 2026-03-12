@@ -71,8 +71,8 @@ export function TodayDietCard() {
         <Link
           href="/diet"
           className={cn(
-            buttonVariants({ size: "sm" }),
-            "w-full bg-primary hover:bg-primary/90"
+            buttonVariants({ size: "sm", variant: "outline" }),
+            "w-full"
           )}
         >
           <UtensilsCrossed className="size-4" />

@@ -37,8 +37,8 @@ export function RecentQnaCard() {
         <Link
           href="/qna"
           className={cn(
-            buttonVariants({ size: "sm" }),
-            "w-full bg-primary hover:bg-primary/90"
+            buttonVariants({ size: "sm", variant: "outline" }),
+            "w-full"
           )}
         >
           질문하기

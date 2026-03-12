@@ -49,8 +49,8 @@ export function TodayWorkoutCard() {
         <Link
           href="/workout"
           className={cn(
-            buttonVariants({ size: "sm" }),
-            "w-full bg-primary hover:bg-primary/90"
+            buttonVariants({ size: "sm", variant: "outline" }),
+            "w-full"
           )}
         >
           <Dumbbell className="size-4" />
