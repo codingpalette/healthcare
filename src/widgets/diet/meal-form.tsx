@@ -1,20 +1,24 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Camera, X } from "lucide-react"
+import { CalendarIcon, Camera, X } from "lucide-react"
 import type { Meal, MealInput, MealType } from "@/entities/meal"
 import { useCreateMeal, useUpdateMeal } from "@/features/diet"
 import {
+  Calendar,
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Button,
   Input,
   Label,
   Badge,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/shared/ui"
 import { cn } from "@/shared/lib/utils"
 
@@ -32,10 +36,37 @@ interface MealFormProps {
   defaultDate?: string
 }
 
+function formatDateValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
+function parseDateValue(value: string) {
+  const [year, month, day] = value.split("-").map(Number)
+
+  if (!year || !month || !day) {
+    return new Date()
+  }
+
+  return new Date(year, month - 1, day)
+}
+
+function formatDateLabel(value: string) {
+  return parseDateValue(value).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+}
+
 export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealFormProps) {
   const createMeal = useCreateMeal()
   const updateMeal = useUpdateMeal()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dialogContentRef = useRef<HTMLDivElement>(null)
 
   const [mealType, setMealType] = useState<MealType>(editMeal?.mealType ?? "lunch")
   const [description, setDescription] = useState(editMeal?.description ?? "")
@@ -43,11 +74,13 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
   const [carbs, setCarbs] = useState(editMeal?.carbs?.toString() ?? "")
   const [protein, setProtein] = useState(editMeal?.protein?.toString() ?? "")
   const [fat, setFat] = useState(editMeal?.fat?.toString() ?? "")
-  const [date, setDate] = useState(editMeal?.date ?? defaultDate ?? new Date().toISOString().split("T")[0])
+  const [date, setDate] = useState(editMeal?.date ?? defaultDate ?? formatDateValue(new Date()))
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(editMeal?.photoUrl ?? null)
 
   const isSubmitting = createMeal.isPending || updateMeal.isPending
+  const selectedDate = parseDateValue(date)
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -86,7 +119,7 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent ref={dialogContentRef} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{editMeal ? "식단 수정" : "식단 기록"}</DialogTitle>
           <DialogDescription>
@@ -116,13 +149,36 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
 
           {/* 날짜 */}
           <div className="space-y-2">
-            <Label htmlFor="date">날짜</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+            <Label htmlFor="meal-date">날짜</Label>
+            <Popover open={isDatePickerOpen} onOpenChange={(nextOpen) => setIsDatePickerOpen(nextOpen)}>
+              <PopoverTrigger
+                id="meal-date"
+                render={
+                  <Button
+                    className="w-full justify-between font-normal"
+                    type="button"
+                    variant="outline"
+                  />
+                }
+              >
+                <span>{formatDateLabel(date)}</span>
+                <CalendarIcon data-icon="inline-end" />
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-auto p-3"
+                container={dialogContentRef}
+              >
+                <Calendar
+                  defaultMonth={selectedDate}
+                  selected={selectedDate}
+                  onSelect={(nextDate) => {
+                    setDate(formatDateValue(nextDate))
+                    setIsDatePickerOpen(false)
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* 설명 */}
