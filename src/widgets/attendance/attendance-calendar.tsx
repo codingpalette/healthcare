@@ -84,8 +84,8 @@ export function AttendanceCalendar() {
     <Card className="border-0 shadow-md">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <div className="rounded-lg bg-violet-100 p-2">
-            <CalendarCheck className="size-4 text-violet-600" />
+          <div className="rounded-lg bg-primary/10 p-2">
+            <CalendarCheck className="size-4 text-primary" />
           </div>
           출석 달력
         </CardTitle>
@@ -121,12 +121,12 @@ export function AttendanceCalendar() {
               <div
                 key={`day-${day}`}
                 className={`relative flex items-center justify-center rounded-lg py-2 text-sm ${
-                  isToday ? "font-bold ring-1 ring-violet-300" : ""
-                } ${isAttended ? "bg-violet-100 text-violet-700 font-medium" : ""}`}
+                  isToday ? "font-bold ring-1 ring-primary/30" : ""
+                } ${isAttended ? "bg-primary/10 text-primary font-medium" : ""}`}
               >
                 {day}
                 {isAttended && (
-                  <span className="absolute bottom-0.5 size-1 rounded-full bg-violet-500" />
+                  <span className="absolute bottom-0.5 size-1 rounded-full bg-primary" />
                 )}
               </div>
             )
@@ -134,15 +134,15 @@ export function AttendanceCalendar() {
         </div>
 
         {/* 월 통계 */}
-        <div className="flex items-center justify-around rounded-lg bg-violet-50 px-3 py-3">
+        <div className="flex items-center justify-around rounded-lg bg-muted px-3 py-3">
           <div className="text-center">
-            <p className="text-lg font-bold text-violet-700">{attendanceDays}일</p>
-            <p className="text-xs text-violet-500">이번 달 출석</p>
+            <p className="text-lg font-bold text-primary">{attendanceDays}일</p>
+            <p className="text-xs text-muted-foreground">이번 달 출석</p>
           </div>
-          <div className="h-8 w-px bg-violet-200" />
+          <div className="h-8 w-px bg-border" />
           <div className="text-center">
-            <p className="text-lg font-bold text-violet-700">{avgDuration}</p>
-            <p className="text-xs text-violet-500">평균 운동 시간</p>
+            <p className="text-lg font-bold text-primary">{avgDuration}</p>
+            <p className="text-xs text-muted-foreground">평균 운동 시간</p>
           </div>
         </div>
       </CardContent>

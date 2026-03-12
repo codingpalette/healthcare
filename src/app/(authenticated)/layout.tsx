@@ -69,7 +69,7 @@ export default async function AuthenticatedLayout({
       <AppSidebar profile={profile} />
       <SidebarInset>
         <AppHeader />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-auto bg-primary/5 p-6 md:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

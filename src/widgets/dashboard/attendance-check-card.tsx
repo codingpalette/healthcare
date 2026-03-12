@@ -79,8 +79,8 @@ export function AttendanceCheckCard() {
     <Card className="border-0 shadow-md">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <div className="rounded-lg bg-violet-100 p-2">
-            <CalendarCheck className="size-4 text-violet-600" />
+          <div className="rounded-lg bg-primary/10 p-2">
+            <CalendarCheck className="size-4 text-primary" />
           </div>
           출석 체크
         </CardTitle>
@@ -94,17 +94,17 @@ export function AttendanceCheckCard() {
         ) : activeRecord ? (
           // 운동 중 상태
           <div className="space-y-3">
-            <div className="flex items-center gap-3 rounded-xl bg-green-50 p-4">
-              <Clock className="size-6 text-green-500 animate-pulse" />
+            <div className="flex items-center gap-3 rounded-xl bg-primary/10 p-4">
+              <Clock className="size-6 text-primary animate-pulse" />
               <div>
-                <p className="text-sm font-medium text-green-700">운동 중</p>
-                <p className="text-2xl font-bold text-green-800">
+                <p className="text-sm font-medium text-primary">운동 중</p>
+                <p className="text-2xl font-bold text-foreground">
                   {formatDuration(activeRecord.checkInAt, now.toISOString())}
                 </p>
               </div>
             </div>
             <Button
-              className="w-full bg-red-500 hover:bg-red-600"
+              className="w-full bg-destructive hover:bg-destructive/90"
               onClick={() => checkOutMutation.mutate()}
               disabled={isPending}
             >
@@ -115,17 +115,17 @@ export function AttendanceCheckCard() {
         ) : todayCompleted.length > 0 ? (
           // 오늘 운동 완료
           <div className="space-y-3">
-            <div className="flex items-center gap-3 rounded-xl bg-blue-50 p-4">
-              <CheckCircle2 className="size-6 text-blue-500" />
+            <div className="flex items-center gap-3 rounded-xl bg-muted p-4">
+              <CheckCircle2 className="size-6 text-primary" />
               <div>
-                <p className="text-sm font-medium text-blue-700">오늘 운동 완료</p>
-                <p className="text-lg font-bold text-blue-800">
+                <p className="text-sm font-medium text-primary">오늘 운동 완료</p>
+                <p className="text-lg font-bold text-foreground">
                   {todayCompleted.map((a) => formatDuration(a.checkInAt, a.checkOutAt)).join(", ")}
                 </p>
               </div>
             </div>
             <Button
-              className="w-full bg-violet-500 hover:bg-violet-600"
+              className="w-full bg-primary hover:bg-primary/90"
               onClick={() => checkInMutation.mutate()}
               disabled={isPending}
             >
@@ -136,15 +136,15 @@ export function AttendanceCheckCard() {
         ) : (
           // 미체크인
           <div className="space-y-3">
-            <div className="flex items-center gap-3 rounded-xl bg-gray-50 p-4">
-              <CalendarCheck className="size-6 text-gray-400" />
+            <div className="flex items-center gap-3 rounded-xl bg-muted p-4">
+              <CalendarCheck className="size-6 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium text-gray-600">아직 체크인하지 않았습니다</p>
-                <p className="text-xs text-gray-400">버튼을 눌러 운동을 시작하세요</p>
+                <p className="text-sm font-medium text-muted-foreground">아직 체크인하지 않았습니다</p>
+                <p className="text-xs text-muted-foreground">버튼을 눌러 운동을 시작하세요</p>
               </div>
             </div>
             <Button
-              className="w-full bg-violet-500 hover:bg-violet-600"
+              className="w-full bg-primary hover:bg-primary/90"
               onClick={() => checkInMutation.mutate()}
               disabled={isPending}
             >
@@ -154,9 +154,9 @@ export function AttendanceCheckCard() {
           </div>
         )}
 
-        <div className="flex items-center justify-between rounded-lg bg-violet-50 px-3 py-2">
-          <span className="text-sm text-violet-600">이번 주 {weekDays}일 출석</span>
-          <Link href="/attendance" className="flex items-center gap-1 text-xs text-violet-500 hover:text-violet-700">
+        <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+          <span className="text-sm text-primary">이번 주 {weekDays}일 출석</span>
+          <Link href="/attendance" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
             출석 기록
             <ArrowRight className="size-3" />
           </Link>

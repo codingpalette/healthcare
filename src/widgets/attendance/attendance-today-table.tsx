@@ -43,8 +43,8 @@ export function AttendanceTodayTable() {
     <Card className="border-0 shadow-md">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <div className="rounded-lg bg-violet-100 p-2">
-            <CalendarCheck className="size-4 text-violet-600" />
+          <div className="rounded-lg bg-primary/10 p-2">
+            <CalendarCheck className="size-4 text-primary" />
           </div>
           오늘 출석 현황
         </CardTitle>
@@ -86,7 +86,7 @@ export function AttendanceTodayTable() {
                     {record.checkOutAt ? (
                       <Badge variant="secondary">완료</Badge>
                     ) : (
-                      <Badge className="bg-green-100 text-green-700">운동 중</Badge>
+                      <Badge className="bg-primary/10 text-primary">운동 중</Badge>
                     )}
                   </TableCell>
                 </TableRow>

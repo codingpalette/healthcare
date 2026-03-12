@@ -25,38 +25,38 @@ export function AttendanceOverviewCard() {
     <Card className="border-0 shadow-md">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <div className="rounded-lg bg-violet-100 p-2">
-            <CalendarCheck className="size-4 text-violet-600" />
+          <div className="rounded-lg bg-primary/10 p-2">
+            <CalendarCheck className="size-4 text-primary" />
           </div>
           출석 현황
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col items-center rounded-xl bg-violet-50 p-4">
-            <Users className="size-6 text-violet-500" />
+          <div className="flex flex-col items-center rounded-xl bg-muted p-4">
+            <Users className="size-6 text-primary" />
             {isLoading ? (
               <Skeleton className="mt-2 h-8 w-8" />
             ) : (
-              <span className="mt-2 text-2xl font-bold text-violet-700">{totalToday}</span>
+              <span className="mt-2 text-2xl font-bold">{totalToday}</span>
             )}
-            <span className="text-xs text-violet-600">오늘 출석</span>
+            <span className="text-xs text-muted-foreground">오늘 출석</span>
           </div>
-          <div className="flex flex-col items-center rounded-xl bg-green-50 p-4">
-            <Activity className="size-6 text-green-500" />
+          <div className="flex flex-col items-center rounded-xl bg-muted p-4">
+            <Activity className="size-6 text-primary" />
             {isLoading ? (
               <Skeleton className="mt-2 h-8 w-8" />
             ) : (
-              <span className="mt-2 text-2xl font-bold text-green-700">{workingOut}</span>
+              <span className="mt-2 text-2xl font-bold">{workingOut}</span>
             )}
-            <span className="text-xs text-green-600">운동 중</span>
+            <span className="text-xs text-muted-foreground">운동 중</span>
           </div>
         </div>
         <Link
           href="/attendance"
           className={cn(
             buttonVariants({ size: "sm", variant: "outline" }),
-            "w-full border-violet-200 text-violet-600 hover:bg-violet-50"
+            "w-full"
           )}
         >
           출석 관리
