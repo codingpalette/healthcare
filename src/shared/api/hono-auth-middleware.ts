@@ -2,7 +2,7 @@ import { createMiddleware } from "hono/factory"
 import { createClient } from "@supabase/supabase-js"
 
 // Hono Context에 user 타입 추가
-type AuthEnv = {
+export type AuthEnv = {
   Variables: {
     userId: string
     userRole: string
