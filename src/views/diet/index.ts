@@ -1,1 +1,1 @@
-// Diet page composition
+export { DietPage } from "./ui/DietPage"

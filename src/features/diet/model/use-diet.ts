@@ -1,0 +1,69 @@
+"use client"
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import {
+  createMeal,
+  getMyMeals,
+  getTodayMeals,
+  getMemberMeals,
+  updateMeal,
+  deleteMeal,
+} from "@/entities/meal"
+import type { MealInput } from "@/entities/meal"
+
+export function useMyMeals(from?: string, to?: string) {
+  return useQuery({
+    queryKey: ["diet", "me", from, to],
+    queryFn: () => getMyMeals({ from, to }),
+  })
+}
+
+export function useTodayMeals() {
+  return useQuery({
+    queryKey: ["diet", "today"],
+    queryFn: getTodayMeals,
+  })
+}
+
+export function useMemberMeals(id: string, from?: string, to?: string) {
+  return useQuery({
+    queryKey: ["diet", id, from, to],
+    queryFn: () => getMemberMeals(id, { from, to }),
+    enabled: !!id,
+  })
+}
+
+export function useCreateMeal() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ input, photo }: { input: MealInput; photo?: File }) =>
+      createMeal(input, photo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["diet"] })
+    },
+  })
+}
+
+export function useUpdateMeal() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, input, photo }: { id: string; input: Partial<MealInput>; photo?: File }) =>
+      updateMeal(id, input, photo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["diet"] })
+    },
+  })
+}
+
+export function useDeleteMeal() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteMeal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["diet"] })
+    },
+  })
+}

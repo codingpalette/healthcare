@@ -636,6 +636,342 @@ attendance.get("/members/:id", async (c) => {
 
 app.route("/attendance", attendance)
 
+// 식단 관리 라우트
+const diet = new Hono().use(authMiddleware)
+
+// 식단 생성 (사진 업로드 포함)
+diet.post("/", async (c) => {
+  const userId = c.get("userId")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const contentType = c.req.header("Content-Type") ?? ""
+  let mealType: string | undefined
+  let description: string | undefined
+  let calories: string | undefined
+  let carbs: string | undefined
+  let protein: string | undefined
+  let fat: string | undefined
+  let date: string | undefined
+  let photoUrl: string | undefined
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await c.req.formData()
+    const file = formData.get("file")
+
+    if (file && file instanceof File) {
+      // 이미지 타입 검증
+      if (!file.type.startsWith("image/")) {
+        return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
+      }
+      // 10MB 크기 제한
+      if (file.size > 10 * 1024 * 1024) {
+        return c.json({ error: "파일 크기는 10MB 이하여야 합니다" }, 400)
+      }
+
+      const ext = file.name.split(".").pop() ?? "jpg"
+      const key = `meals/${userId}/${Date.now()}.${ext}`
+
+      const arrayBuffer = await file.arrayBuffer()
+      await r2Client.send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET,
+          Key: key,
+          Body: new Uint8Array(arrayBuffer),
+          ContentType: file.type,
+        })
+      )
+      photoUrl = `${R2_PUBLIC_URL}/${key}`
+    }
+
+    mealType = formData.get("mealType") as string | undefined
+    description = formData.get("description") as string | undefined
+    calories = formData.get("calories") as string | undefined
+    carbs = formData.get("carbs") as string | undefined
+    protein = formData.get("protein") as string | undefined
+    fat = formData.get("fat") as string | undefined
+    date = formData.get("date") as string | undefined
+  } else {
+    const body = await c.req.json<{
+      mealType?: string
+      description?: string
+      calories?: number
+      carbs?: number
+      protein?: number
+      fat?: number
+      date?: string
+    }>()
+    mealType = body.mealType
+    description = body.description
+    calories = body.calories != null ? String(body.calories) : undefined
+    carbs = body.carbs != null ? String(body.carbs) : undefined
+    protein = body.protein != null ? String(body.protein) : undefined
+    fat = body.fat != null ? String(body.fat) : undefined
+    date = body.date
+  }
+
+  if (!mealType || !["breakfast", "lunch", "dinner", "snack"].includes(mealType)) {
+    return c.json({ error: "올바른 식사 유형을 선택해주세요" }, 400)
+  }
+
+  const insertData: Record<string, unknown> = {
+    user_id: userId,
+    meal_type: mealType,
+  }
+  if (description) insertData.description = description
+  if (calories) insertData.calories = Number(calories)
+  if (carbs) insertData.carbs = Number(carbs)
+  if (protein) insertData.protein = Number(protein)
+  if (fat) insertData.fat = Number(fat)
+  if (photoUrl) insertData.photo_url = photoUrl
+  if (date) insertData.date = date
+
+  const { data, error } = await adminSupabase
+    .from("meals")
+    .insert(insertData)
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data, 201)
+})
+
+// 내 식단 조회
+diet.get("/me", async (c) => {
+  const userId = c.get("userId")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const fromParam = c.req.query("from")
+  const toParam = c.req.query("to")
+
+  let query = adminSupabase
+    .from("meals")
+    .select("*")
+    .eq("user_id", userId)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+
+  if (fromParam) query = query.gte("date", fromParam)
+  if (toParam) query = query.lte("date", toParam)
+
+  const { data, error } = await query
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+// 오늘 전체 식단 조회 (트레이너 전용)
+diet.get("/today", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const today = new Date().toISOString().split("T")[0]
+
+  const { data, error } = await adminSupabase
+    .from("meals")
+    .select("*, profiles!inner(name)")
+    .eq("date", today)
+    .order("created_at", { ascending: false })
+
+  if (error) return c.json({ error: error.message }, 400)
+
+  // profiles join 결과를 flat하게 변환
+  const result = (data ?? []).map((row: Record<string, unknown>) => {
+    const profiles = row.profiles as Record<string, unknown> | null
+    return {
+      ...row,
+      profiles: undefined,
+      user_name: profiles?.name ?? "",
+    }
+  })
+
+  return c.json(result)
+})
+
+// 특정 회원 식단 조회 (트레이너 전용)
+diet.get("/members/:id", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const memberId = c.req.param("id")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const fromParam = c.req.query("from")
+  const toParam = c.req.query("to")
+
+  let query = adminSupabase
+    .from("meals")
+    .select("*")
+    .eq("user_id", memberId)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+
+  if (fromParam) query = query.gte("date", fromParam)
+  if (toParam) query = query.lte("date", toParam)
+
+  const { data, error } = await query
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+// 식단 수정
+diet.patch("/:id", async (c) => {
+  const userId = c.get("userId")
+  const mealId = c.req.param("id")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // 본인 식단인지 확인
+  const { data: existing } = await adminSupabase
+    .from("meals")
+    .select("id, user_id, photo_url")
+    .eq("id", mealId)
+    .single()
+
+  if (!existing) return c.json({ error: "식단을 찾을 수 없습니다" }, 404)
+  if (existing.user_id !== userId) return c.json({ error: "본인의 식단만 수정할 수 있습니다" }, 403)
+
+  const contentType = c.req.header("Content-Type") ?? ""
+  const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() }
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await c.req.formData()
+    const file = formData.get("file")
+
+    if (file && file instanceof File) {
+      if (!file.type.startsWith("image/")) {
+        return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        return c.json({ error: "파일 크기는 10MB 이하여야 합니다" }, 400)
+      }
+
+      // 기존 사진 삭제
+      if (existing.photo_url) {
+        const oldKey = (existing.photo_url as string).replace(`${R2_PUBLIC_URL}/`, "")
+        try {
+          await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: oldKey }))
+        } catch {
+          // 기존 파일 삭제 실패는 무시
+        }
+      }
+
+      const ext = file.name.split(".").pop() ?? "jpg"
+      const key = `meals/${userId}/${Date.now()}.${ext}`
+      const arrayBuffer = await file.arrayBuffer()
+      await r2Client.send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET,
+          Key: key,
+          Body: new Uint8Array(arrayBuffer),
+          ContentType: file.type,
+        })
+      )
+      updateData.photo_url = `${R2_PUBLIC_URL}/${key}`
+    }
+
+    const mealType = formData.get("mealType") as string | null
+    const description = formData.get("description") as string | null
+    const calories = formData.get("calories") as string | null
+    const carbs = formData.get("carbs") as string | null
+    const protein = formData.get("protein") as string | null
+    const fat = formData.get("fat") as string | null
+    const date = formData.get("date") as string | null
+
+    if (mealType) updateData.meal_type = mealType
+    if (description) updateData.description = description
+    if (calories) updateData.calories = Number(calories)
+    if (carbs) updateData.carbs = Number(carbs)
+    if (protein) updateData.protein = Number(protein)
+    if (fat) updateData.fat = Number(fat)
+    if (date) updateData.date = date
+  } else {
+    const body = await c.req.json<Record<string, unknown>>()
+    if (body.mealType) updateData.meal_type = body.mealType
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.calories !== undefined) updateData.calories = body.calories
+    if (body.carbs !== undefined) updateData.carbs = body.carbs
+    if (body.protein !== undefined) updateData.protein = body.protein
+    if (body.fat !== undefined) updateData.fat = body.fat
+    if (body.date) updateData.date = body.date
+  }
+
+  const { data, error } = await adminSupabase
+    .from("meals")
+    .update(updateData)
+    .eq("id", mealId)
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+// 식단 삭제
+diet.delete("/:id", async (c) => {
+  const userId = c.get("userId")
+  const mealId = c.req.param("id")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // 본인 식단인지 확인
+  const { data: existing } = await adminSupabase
+    .from("meals")
+    .select("id, user_id, photo_url")
+    .eq("id", mealId)
+    .single()
+
+  if (!existing) return c.json({ error: "식단을 찾을 수 없습니다" }, 404)
+  if (existing.user_id !== userId) return c.json({ error: "본인의 식단만 삭제할 수 있습니다" }, 403)
+
+  // R2 사진 삭제
+  if (existing.photo_url) {
+    const oldKey = (existing.photo_url as string).replace(`${R2_PUBLIC_URL}/`, "")
+    try {
+      await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: oldKey }))
+    } catch {
+      // 기존 파일 삭제 실패는 무시
+    }
+  }
+
+  const { error } = await adminSupabase
+    .from("meals")
+    .delete()
+    .eq("id", mealId)
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json({ success: true })
+})
+
+app.route("/diet", diet)
+
 export const GET = handle(app)
 export const POST = handle(app)
 export const PUT = handle(app)

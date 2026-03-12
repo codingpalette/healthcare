@@ -1,1 +1,1 @@
-// Meal entity model
+export type { Meal, MealWithProfile, MealInput, MealType } from "./types"
