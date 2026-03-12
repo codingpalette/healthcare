@@ -96,12 +96,16 @@ export async function getMyMeals(params?: { from?: string; to?: string }): Promi
   return (data as Record<string, unknown>[]).map(toMeal)
 }
 
-// 오늘 전체 식단 조회 (트레이너용)
-export async function getTodayMeals(): Promise<MealWithProfile[]> {
+// 날짜별 식단 조회 (트레이너용)
+export async function getTodayMeals(date?: string): Promise<MealWithProfile[]> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증되지 않은 사용자입니다")
 
-  const res = await fetch("/api/diet/today", {
+  const searchParams = new URLSearchParams()
+  if (date) searchParams.set("date", date)
+
+  const query = searchParams.toString()
+  const res = await fetch(`/api/diet/today${query ? `?${query}` : ""}`, {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },

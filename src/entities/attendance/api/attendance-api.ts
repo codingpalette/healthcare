@@ -86,12 +86,16 @@ export async function getMyAttendance(params?: { from?: string; to?: string }): 
   return (data as Record<string, unknown>[]).map(toAttendance)
 }
 
-// 오늘 출석 목록 조회 (트레이너용)
-export async function getTodayAttendance(): Promise<AttendanceWithProfile[]> {
+// 날짜별 출석 목록 조회 (트레이너용)
+export async function getTodayAttendance(date?: string): Promise<AttendanceWithProfile[]> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증되지 않은 사용자입니다")
 
-  const res = await fetch("/api/attendance/today", {
+  const searchParams = new URLSearchParams()
+  if (date) searchParams.set("date", date)
+
+  const query = searchParams.toString()
+  const res = await fetch(`/api/attendance/today${query ? `?${query}` : ""}`, {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },

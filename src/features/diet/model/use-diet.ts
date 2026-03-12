@@ -18,10 +18,10 @@ export function useMyMeals(from?: string, to?: string) {
   })
 }
 
-export function useTodayMeals() {
+export function useTodayMeals(date?: string) {
   return useQuery({
-    queryKey: ["diet", "today"],
-    queryFn: getTodayMeals,
+    queryKey: ["diet", "today", date],
+    queryFn: () => getTodayMeals(date),
   })
 }
 

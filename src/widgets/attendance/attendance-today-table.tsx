@@ -1,24 +1,43 @@
 "use client"
 
-import { CalendarCheck } from "lucide-react"
+import { useState } from "react"
+import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 
 import {
+  Badge,
+  Button,
+  Calendar,
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
-  CardContent,
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Skeleton,
-  Badge,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/shared/ui"
 import { useTodayAttendance } from "@/features/attendance"
 
-// 운동 시간 계산
+function formatLocalDateValue(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
 function formatDuration(start: string, end?: string | null): string {
   if (!end) return "운동 중"
   const diff = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / 1000)
@@ -28,7 +47,6 @@ function formatDuration(start: string, end?: string | null): string {
   return `${minutes}분`
 }
 
-// 시간만 표시
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString("ko-KR", {
     hour: "2-digit",
@@ -36,18 +54,90 @@ function formatTime(dateStr: string): string {
   })
 }
 
+function formatFullDate(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  })
+}
+
 export function AttendanceTodayTable() {
-  const { data: attendance, isLoading } = useTodayAttendance()
+  const today = formatLocalDateValue(new Date())
+  const todayDate = new Date(`${today}T00:00:00`)
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const { data: attendance, isLoading } = useTodayAttendance(selectedDate)
+
+  const goToPreviousDate = () => {
+    setSelectedDate(formatLocalDateValue(addDays(new Date(`${selectedDate}T00:00:00`), -1)))
+  }
+
+  const goToNextDate = () => {
+    setSelectedDate(formatLocalDateValue(addDays(new Date(`${selectedDate}T00:00:00`), 1)))
+  }
 
   return (
     <Card className="border-0 shadow-md">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <div className="rounded-lg bg-primary/10 p-2">
-            <CalendarCheck className="size-4 text-primary" />
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <CalendarCheck className="size-4 text-primary" />
+              </div>
+              회원 출석 현황
+            </CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              날짜를 바꿔 회원들의 출석 기록을 확인할 수 있습니다.
+            </p>
           </div>
-          오늘 출석 현황
-        </CardTitle>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              aria-label="이전 출석 날짜"
+              variant="ghost"
+              size="icon-sm"
+              onClick={goToPreviousDate}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-w-48 justify-between font-normal"
+                  />
+                }
+              >
+                <span>{formatFullDate(selectedDate)}</span>
+                <CalendarDays data-icon="inline-end" />
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-3">
+                <Calendar
+                  defaultMonth={new Date(`${selectedDate}T00:00:00`)}
+                  selected={new Date(`${selectedDate}T00:00:00`)}
+                  onSelect={(nextDate) => {
+                    if (nextDate > todayDate) return
+                    setSelectedDate(formatLocalDateValue(nextDate))
+                    setIsDatePickerOpen(false)
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              aria-label="다음 출석 날짜"
+              variant="ghost"
+              size="icon-sm"
+              onClick={goToNextDate}
+              disabled={selectedDate >= today}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -58,7 +148,7 @@ export function AttendanceTodayTable() {
           </div>
         ) : !attendance?.length ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            오늘 출석 기록이 없습니다
+            선택한 날짜에 출석 기록이 없습니다
           </p>
         ) : (
           <Table>
@@ -76,12 +166,8 @@ export function AttendanceTodayTable() {
                 <TableRow key={record.id}>
                   <TableCell className="font-medium">{record.userName}</TableCell>
                   <TableCell>{formatTime(record.checkInAt)}</TableCell>
-                  <TableCell>
-                    {record.checkOutAt ? formatTime(record.checkOutAt) : "-"}
-                  </TableCell>
-                  <TableCell>
-                    {formatDuration(record.checkInAt, record.checkOutAt)}
-                  </TableCell>
+                  <TableCell>{record.checkOutAt ? formatTime(record.checkOutAt) : "-"}</TableCell>
+                  <TableCell>{formatDuration(record.checkInAt, record.checkOutAt)}</TableCell>
                   <TableCell>
                     {record.checkOutAt ? (
                       <Badge variant="secondary">완료</Badge>

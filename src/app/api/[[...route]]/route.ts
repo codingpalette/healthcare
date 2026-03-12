@@ -578,13 +578,19 @@ attendance.get("/today", async (c) => {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
+  const dateParam = c.req.query("date")
+  const targetDate =
+    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? dateParam
+      : new Date().toISOString().split("T")[0]
+  const dayStart = new Date(`${targetDate}T00:00:00+09:00`).toISOString()
+  const dayEnd = new Date(`${targetDate}T23:59:59.999+09:00`).toISOString()
 
   const { data, error } = await adminSupabase
     .from("attendance")
     .select("*, profiles!inner(name)")
-    .gte("check_in_at", todayStart.toISOString())
+    .gte("check_in_at", dayStart)
+    .lte("check_in_at", dayEnd)
     .order("check_in_at", { ascending: false })
 
   if (error) return c.json({ error: error.message }, 400)
@@ -779,12 +785,16 @@ diet.get("/today", async (c) => {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const today = new Date().toISOString().split("T")[0]
+  const dateParam = c.req.query("date")
+  const targetDate =
+    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? dateParam
+      : new Date().toISOString().split("T")[0]
 
   const { data, error } = await adminSupabase
     .from("meals")
     .select("*, profiles!inner(name)")
-    .eq("date", today)
+    .eq("date", targetDate)
     .order("created_at", { ascending: false })
 
   if (error) return c.json({ error: error.message }, 400)

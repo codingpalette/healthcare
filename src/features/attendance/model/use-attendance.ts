@@ -38,10 +38,10 @@ export function useMyAttendance(from?: string, to?: string) {
   })
 }
 
-export function useTodayAttendance() {
+export function useTodayAttendance(date?: string) {
   return useQuery({
-    queryKey: ["attendance", "today"],
-    queryFn: getTodayAttendance,
+    queryKey: ["attendance", "today", date],
+    queryFn: () => getTodayAttendance(date),
   })
 }
 
