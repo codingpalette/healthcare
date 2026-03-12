@@ -19,10 +19,10 @@
 - [x] 아바타 이미지 업로드 (Cloudflare R2)
 
 ## 출석 관리 (/attendance)
-- [ ] 출석 엔티티 DB 마이그레이션 (attendance 테이블: user_id, check_in_at, check_out_at)
-- [ ] 출석 기록 CRUD (Hono API 엔드포인트)
-- [ ] 출석 체크 UI (QR코드 또는 버튼 체크인)
-- [ ] 출석 현황 조회 (일별/주별/월별)
+- [x] 출석 엔티티 DB 마이그레이션 (attendance 테이블: user_id, check_in_at, check_out_at)
+- [x] 출석 기록 CRUD (Hono API 엔드포인트)
+- [x] 출석 체크 UI (QR코드 또는 버튼 체크인)
+- [x] 출석 현황 조회 (일별/주별/월별)
 - [ ] 결석 알림 기능 (3일 연속 결석 시 문자/푸시 알림)
 - [ ] 알림 발송 스케줄러 (Supabase Edge Function 또는 Cron)
 
