@@ -10,6 +10,7 @@ export interface Meal {
   protein: number | null
   fat: number | null
   photoUrl: string | null
+  trainerFeedback: string | null
   date: string
   createdAt: string
   updatedAt: string

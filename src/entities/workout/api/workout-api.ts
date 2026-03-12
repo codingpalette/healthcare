@@ -145,13 +145,19 @@ export async function getMemberWorkouts(
   return (data as Record<string, unknown>[]).map(toWorkout)
 }
 
-export async function updateWorkout(id: string, input: Partial<WorkoutInput>, media?: File): Promise<Workout> {
+export async function updateWorkout(
+  id: string,
+  input: Partial<WorkoutInput>,
+  media?: File,
+  removeMedia?: boolean
+): Promise<Workout> {
   const accessToken = await getAccessToken()
   let res: Response
 
   if (media) {
     const formData = new FormData()
     formData.append("file", media)
+    if (removeMedia) formData.append("removeMedia", "true")
     if (input.exerciseName) formData.append("exerciseName", input.exerciseName)
     if (input.sets !== undefined) formData.append("sets", input.sets === null ? "" : String(input.sets))
     if (input.reps !== undefined) formData.append("reps", input.reps === null ? "" : String(input.reps))
@@ -179,7 +185,10 @@ export async function updateWorkout(id: string, input: Partial<WorkoutInput>, me
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        ...input,
+        removeMedia,
+      }),
     })
   }
 

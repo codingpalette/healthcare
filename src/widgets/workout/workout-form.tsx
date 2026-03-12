@@ -2,9 +2,11 @@
 
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
-import { CalendarIcon, Camera, Video, X } from "lucide-react"
+import { CalendarIcon, Camera, X } from "lucide-react"
+import { toast } from "sonner"
 import type { Workout, WorkoutInput } from "@/entities/workout"
 import { useCreateWorkout, useUpdateWorkout } from "@/features/workout"
+import { compressImageToWebP } from "@/shared/lib/media"
 import {
   Button,
   Calendar,
@@ -57,6 +59,12 @@ function parseNumberField(value: string, isEdit: boolean) {
   return Number(value)
 }
 
+function revokePreviewUrl(url: string | null) {
+  if (url?.startsWith("blob:")) {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export function WorkoutForm({
   open,
   onOpenChange,
@@ -82,53 +90,51 @@ export function WorkoutForm({
   const [mediaPreviewType, setMediaPreviewType] = useState<"image" | "video" | null>(
     editWorkout?.mediaType ?? null
   )
+  const [isMediaRemoved, setIsMediaRemoved] = useState(false)
 
   const isSubmitting = createWorkout.isPending || updateWorkout.isPending
   const selectedDate = parseDateValue(date)
 
   useEffect(() => {
-    setExerciseName(editWorkout?.exerciseName ?? "")
-    setSets(editWorkout?.sets?.toString() ?? "")
-    setReps(editWorkout?.reps?.toString() ?? "")
-    setWeight(editWorkout?.weight?.toString() ?? "")
-    setDurationMinutes(editWorkout?.durationMinutes?.toString() ?? "")
-    setCaloriesBurned(editWorkout?.caloriesBurned?.toString() ?? "")
-    setNotes(editWorkout?.notes ?? "")
-    setDate(editWorkout?.date ?? defaultDate ?? formatLocalDateValue(new Date()))
-    setMedia(null)
-    setMediaPreview(editWorkout?.mediaUrl ?? null)
-    setMediaPreviewType(editWorkout?.mediaType ?? null)
-    if (fileInputRef.current) fileInputRef.current.value = ""
-  }, [defaultDate, editWorkout, open])
-
-  useEffect(() => {
     return () => {
-      if (mediaPreview?.startsWith("blob:")) {
-        URL.revokeObjectURL(mediaPreview)
-      }
+      revokePreviewUrl(mediaPreview)
     }
   }, [mediaPreview])
 
-  function handleMediaChange(event: React.ChangeEvent<HTMLInputElement>) {
+  function applySelectedMedia(file: File, previewType: "image" | "video") {
+    revokePreviewUrl(mediaPreview)
+    setMedia(file)
+    setMediaPreview(URL.createObjectURL(file))
+    setMediaPreviewType(previewType)
+    setIsMediaRemoved(false)
+  }
+
+  async function handleMediaChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (mediaPreview?.startsWith("blob:")) {
-      URL.revokeObjectURL(mediaPreview)
-    }
+    try {
+      if (file.type.startsWith("image/")) {
+        const compressedImage = await compressImageToWebP(file)
+        applySelectedMedia(compressedImage, "image")
+        event.target.value = ""
+        return
+      }
 
-    setMedia(file)
-    setMediaPreview(URL.createObjectURL(file))
-    setMediaPreviewType(file.type.startsWith("video/") ? "video" : "image")
+      toast.error("운동 인증은 사진만 업로드할 수 있습니다")
+      event.target.value = ""
+    } catch {
+      toast.error("미디어를 처리하지 못했습니다")
+      event.target.value = ""
+    }
   }
 
   function removeMedia() {
-    if (mediaPreview?.startsWith("blob:")) {
-      URL.revokeObjectURL(mediaPreview)
-    }
+    revokePreviewUrl(mediaPreview)
     setMedia(null)
-    setMediaPreview(editWorkout?.mediaUrl ?? null)
-    setMediaPreviewType(editWorkout?.mediaType ?? null)
+    setMediaPreview(null)
+    setMediaPreviewType(null)
+    setIsMediaRemoved(Boolean(editWorkout?.mediaUrl))
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
@@ -151,6 +157,7 @@ export function WorkoutForm({
         id: editWorkout.id,
         input,
         media: media ?? undefined,
+        removeMedia: isMediaRemoved,
       })
     } else {
       await createWorkout.mutateAsync({
@@ -287,7 +294,7 @@ export function WorkoutForm({
           </div>
 
           <div className="space-y-2">
-            <Label>운동 인증 사진/영상</Label>
+            <Label>운동 인증 사진</Label>
             {mediaPreview ? (
               <div className="relative overflow-hidden rounded-xl border bg-muted">
                 {mediaPreviewType === "video" ? (
@@ -325,16 +332,15 @@ export function WorkoutForm({
               >
                 <div className="flex items-center gap-2 text-primary">
                   <Camera className="size-4" />
-                  <Video className="size-4" />
                 </div>
-                <span>사진 또는 영상을 업로드하세요</span>
-                <span className="text-xs">최대 50MB</span>
+                <span>운동 사진을 업로드하세요</span>
+                <span className="text-xs">업로드한 이미지는 WebP로 압축됩니다</span>
               </button>
             )}
             <Input
               ref={fileInputRef}
               type="file"
-              accept="image/*,video/*"
+              accept="image/*"
               className="hidden"
               onChange={handleMediaChange}
             />

@@ -4,6 +4,7 @@ import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { deletePublicFile, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 
 export const workoutRoutes = new Hono<AuthEnv>().use(authMiddleware)
+const MAX_WORKOUT_IMAGE_BYTES = 10 * 1024 * 1024
 
 function getTodayDateString() {
   return new Date().toISOString().split("T")[0]
@@ -46,13 +47,12 @@ workoutRoutes.post("/", async (c) => {
 
     if (file && file instanceof File) {
       const isImage = file.type.startsWith("image/")
-      const isVideo = file.type.startsWith("video/")
 
-      if (!isImage && !isVideo) {
-        return c.json({ error: "이미지 또는 동영상 파일만 업로드할 수 있습니다" }, 400)
+      if (!isImage) {
+        return c.json({ error: "운동 인증은 이미지 파일만 업로드할 수 있습니다" }, 400)
       }
-      if (file.size > 50 * 1024 * 1024) {
-        return c.json({ error: "파일 크기는 50MB 이하여야 합니다" }, 400)
+      if (isImage && file.size > MAX_WORKOUT_IMAGE_BYTES) {
+        return c.json({ error: "이미지 파일 크기는 10MB 이하여야 합니다" }, 400)
       }
 
       const uploaded = await uploadPublicFile({
@@ -61,7 +61,7 @@ workoutRoutes.post("/", async (c) => {
         ownerId: userId,
       })
       mediaUrl = uploaded.publicUrl
-      mediaType = isVideo ? "video" : "image"
+      mediaType = "image"
     }
 
     exerciseName = formData.get("exerciseName") as string | undefined
@@ -218,16 +218,16 @@ workoutRoutes.patch("/:id", async (c) => {
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()
     const file = formData.get("file")
+    const removeMedia = formData.get("removeMedia") === "true"
 
     if (file && file instanceof File) {
       const isImage = file.type.startsWith("image/")
-      const isVideo = file.type.startsWith("video/")
 
-      if (!isImage && !isVideo) {
-        return c.json({ error: "이미지 또는 동영상 파일만 업로드할 수 있습니다" }, 400)
+      if (!isImage) {
+        return c.json({ error: "운동 인증은 이미지 파일만 업로드할 수 있습니다" }, 400)
       }
-      if (file.size > 50 * 1024 * 1024) {
-        return c.json({ error: "파일 크기는 50MB 이하여야 합니다" }, 400)
+      if (isImage && file.size > MAX_WORKOUT_IMAGE_BYTES) {
+        return c.json({ error: "이미지 파일 크기는 10MB 이하여야 합니다" }, 400)
       }
 
       await deletePublicFile(existing.media_url as string | null)
@@ -238,7 +238,11 @@ workoutRoutes.patch("/:id", async (c) => {
       })
 
       updateData.media_url = uploaded.publicUrl
-      updateData.media_type = isVideo ? "video" : "image"
+      updateData.media_type = "image"
+    } else if (removeMedia) {
+      await deletePublicFile(existing.media_url as string | null)
+      updateData.media_url = null
+      updateData.media_type = null
     }
 
     const exerciseName = formData.get("exerciseName") as string | null
@@ -260,6 +264,11 @@ workoutRoutes.patch("/:id", async (c) => {
     if (date) updateData.date = date
   } else {
     const body = await c.req.json<Record<string, unknown>>()
+    if (body.removeMedia === true) {
+      await deletePublicFile(existing.media_url as string | null)
+      updateData.media_url = null
+      updateData.media_type = null
+    }
     if (body.exerciseName) updateData.exercise_name = body.exerciseName
     if (body.sets !== undefined) updateData.sets = body.sets
     if (body.reps !== undefined) updateData.reps = body.reps

@@ -283,3 +283,27 @@ dietRoutes.delete("/:id", async (c) => {
   if (error) return c.json({ error: error.message }, 400)
   return c.json({ success: true })
 })
+
+dietRoutes.patch("/:id/feedback", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 피드백을 작성할 수 있습니다" }, 403)
+  }
+
+  const mealId = c.req.param("id")
+  const body = await c.req.json<{ trainerFeedback?: string }>()
+  const adminSupabase = createAdminSupabase()
+
+  const { data, error } = await adminSupabase
+    .from("meals")
+    .update({
+      trainer_feedback: body.trainerFeedback?.trim() ? body.trainerFeedback.trim() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", mealId)
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})

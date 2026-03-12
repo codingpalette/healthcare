@@ -354,6 +354,7 @@ export function WorkoutDailyList() {
       </Card>
 
       <WorkoutForm
+        key={`${editWorkout?.id ?? "new"}-${selectedDate}-${formOpen ? "open" : "closed"}`}
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open)

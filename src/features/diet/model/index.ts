@@ -4,5 +4,6 @@ export {
   useMemberMeals,
   useCreateMeal,
   useUpdateMeal,
+  useUpdateMealFeedback,
   useDeleteMeal,
 } from "./use-diet"

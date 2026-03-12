@@ -263,6 +263,13 @@ export function MealDailyList() {
                           관리톡 보기
                         </Link>
                       </div>
+
+                      {meal.trainerFeedback?.trim() && (
+                        <div className="mt-3 rounded-xl bg-primary/5 p-3">
+                          <p className="text-xs text-primary">트레이너 피드백</p>
+                          <p className="mt-1 text-sm">{meal.trainerFeedback}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex shrink-0 gap-1">
                       <Button

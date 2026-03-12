@@ -13,7 +13,7 @@ import {
   MessageSquarePlus,
   UtensilsCrossed,
 } from "lucide-react"
-import { useMemberMeals, useTodayMeals } from "@/features/diet"
+import { useMemberMeals, useTodayMeals, useUpdateMealFeedback } from "@/features/diet"
 import { useEnsureChatRoom, useSendChatMessage } from "@/features/chat"
 import type { MealType, MealWithProfile } from "@/entities/meal"
 import { toast } from "sonner"
@@ -119,20 +119,26 @@ function MealDetailDialog({
   )
   const ensureChatRoom = useEnsureChatRoom()
   const sendChatMessage = useSendChatMessage()
-  const [feedbackDraft, setFeedbackDraft] = useState("")
+  const updateMealFeedback = useUpdateMealFeedback()
+  const [feedbackDraft, setFeedbackDraft] = useState(meal?.trainerFeedback ?? "")
 
   async function handleSendFeedback() {
     if (!meal || !feedbackDraft.trim()) return
+    const trimmedFeedback = feedbackDraft.trim()
 
     try {
+      await updateMealFeedback.mutateAsync({
+        id: meal.id,
+        trainerFeedback: trimmedFeedback,
+      })
       const room = await ensureChatRoom.mutateAsync(meal.userId)
       await sendChatMessage.mutateAsync({
         roomId: room.id,
         type: "feedback",
-        content: feedbackDraft.trim(),
+        content: trimmedFeedback,
         mealId: meal.id,
       })
-      setFeedbackDraft("")
+      setFeedbackDraft(trimmedFeedback)
       toast.success("식단 피드백을 관리톡으로 전송했습니다")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "식단 피드백 전송에 실패했습니다")
@@ -233,12 +239,13 @@ function MealDetailDialog({
                       onClick={handleSendFeedback}
                       disabled={
                         !feedbackDraft.trim() ||
+                        updateMealFeedback.isPending ||
                         ensureChatRoom.isPending ||
                         sendChatMessage.isPending
                       }
                     >
                       <MessageSquarePlus className="size-4" />
-                      {ensureChatRoom.isPending || sendChatMessage.isPending
+                      {updateMealFeedback.isPending || ensureChatRoom.isPending || sendChatMessage.isPending
                         ? "전송 중..."
                         : "관리톡으로 피드백 보내기"}
                     </Button>
@@ -441,6 +448,7 @@ export function MealMemberTable() {
       </Card>
 
       <MealDetailDialog
+        key={selectedMeal?.id ?? "empty"}
         meal={selectedMeal}
         open={!!selectedMeal}
         onOpenChange={(open) => {

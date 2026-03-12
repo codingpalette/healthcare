@@ -54,11 +54,13 @@ export function useUpdateWorkout() {
       id,
       input,
       media,
+      removeMedia,
     }: {
       id: string
       input: Partial<WorkoutInput>
       media?: File
-    }) => updateWorkout(id, input, media),
+      removeMedia?: boolean
+    }) => updateWorkout(id, input, media, removeMedia),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workout"] })
     },

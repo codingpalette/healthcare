@@ -13,6 +13,7 @@ function toMeal(row: Record<string, unknown>): Meal {
     protein: (row.protein as number) ?? null,
     fat: (row.fat as number) ?? null,
     photoUrl: (row.photo_url as string) ?? null,
+    trainerFeedback: (row.trainer_feedback as string) ?? null,
     date: row.date as string,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
@@ -187,6 +188,28 @@ export async function updateMeal(id: string, input: Partial<MealInput>, photo?: 
   if (!res.ok) {
     const err = await res.json()
     throw new Error(err.error ?? "식단 수정에 실패했습니다")
+  }
+
+  const row = await res.json()
+  return toMeal(row)
+}
+
+export async function updateMealFeedback(id: string, trainerFeedback: string): Promise<Meal> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error("인증되지 않은 사용자입니다")
+
+  const res = await fetch(`/api/diet/${id}/feedback`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ trainerFeedback }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "식단 피드백 저장에 실패했습니다")
   }
 
   const row = await res.json()

@@ -1,1 +1,9 @@
-export { createMeal, getMyMeals, getTodayMeals, getMemberMeals, updateMeal, deleteMeal } from "./meal-api"
+export {
+  createMeal,
+  getMyMeals,
+  getTodayMeals,
+  getMemberMeals,
+  updateMeal,
+  updateMealFeedback,
+  deleteMeal,
+} from "./meal-api"

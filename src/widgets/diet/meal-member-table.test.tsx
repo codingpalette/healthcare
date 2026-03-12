@@ -1,3 +1,4 @@
+import { createElement } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import type { Meal, MealWithProfile } from "@/entities/meal"
@@ -5,9 +6,16 @@ import type { Meal, MealWithProfile } from "@/entities/meal"
 import { MealMemberTable } from "./meal-member-table"
 
 vi.mock("next/image", () => ({
-  default: ({ unoptimized: _unoptimized, ...props }: Record<string, unknown>) => (
-    <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} alt={props.alt as string} />
-  ),
+  default: (props: Record<string, unknown>) => {
+    const imageProps = {
+      ...(props as React.ImgHTMLAttributes<HTMLImageElement>),
+      alt: props.alt as string,
+    }
+
+    delete (imageProps as { unoptimized?: unknown }).unoptimized
+
+    return createElement("img", imageProps)
+  },
 }))
 
 const todayMeals: MealWithProfile[] = [
@@ -23,6 +31,7 @@ const todayMeals: MealWithProfile[] = [
     protein: 38,
     fat: 12,
     photoUrl: "https://example.com/meal-1.jpg",
+    trainerFeedback: "채소 구성이 좋아요.",
     createdAt: "2026-03-12T12:10:00+09:00",
     updatedAt: "2026-03-12T12:10:00+09:00",
   },
@@ -41,6 +50,7 @@ const previousDayMeals: MealWithProfile[] = [
     protein: 35,
     fat: 28,
     photoUrl: null,
+    trainerFeedback: null,
     createdAt: "2026-03-11T18:10:00+09:00",
     updatedAt: "2026-03-11T18:10:00+09:00",
   },
@@ -58,6 +68,7 @@ const memberMeals: Meal[] = [
     protein: 38,
     fat: 12,
     photoUrl: "https://example.com/meal-1.jpg",
+    trainerFeedback: "채소 구성이 좋아요.",
     createdAt: "2026-03-12T12:10:00+09:00",
     updatedAt: "2026-03-12T12:10:00+09:00",
   },
@@ -72,6 +83,7 @@ const memberMeals: Meal[] = [
     protein: 34,
     fat: 20,
     photoUrl: null,
+    trainerFeedback: null,
     createdAt: "2026-03-11T18:30:00+09:00",
     updatedAt: "2026-03-11T18:30:00+09:00",
   },
@@ -84,12 +96,17 @@ const useTodayMealsMock = vi.fn((date?: string) => ({
 
 const ensureChatRoomMock = vi.fn()
 const sendChatMessageMock = vi.fn()
+const updateMealFeedbackMock = vi.fn()
 
 vi.mock("@/features/diet", () => ({
   useTodayMeals: (date?: string) => useTodayMealsMock(date),
   useMemberMeals: () => ({
     data: memberMeals,
     isLoading: false,
+  }),
+  useUpdateMealFeedback: () => ({
+    mutateAsync: updateMealFeedbackMock,
+    isPending: false,
   }),
 }))
 
@@ -120,6 +137,8 @@ describe("MealMemberTable", () => {
     ensureChatRoomMock.mockResolvedValue({ id: "room-1" })
     sendChatMessageMock.mockReset()
     sendChatMessageMock.mockResolvedValue(undefined)
+    updateMealFeedbackMock.mockReset()
+    updateMealFeedbackMock.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -170,6 +189,10 @@ describe("MealMemberTable", () => {
     await Promise.resolve()
     await Promise.resolve()
 
+    expect(updateMealFeedbackMock).toHaveBeenCalledWith({
+      id: "meal-1",
+      trainerFeedback: "단백질 구성이 좋아요. 저녁엔 채소를 더 추가해보세요.",
+    })
     expect(ensureChatRoomMock).toHaveBeenCalledWith("member-1")
     expect(sendChatMessageMock).toHaveBeenCalledWith({
       roomId: "room-1",
