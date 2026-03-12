@@ -298,6 +298,7 @@ export function MealDailyList() {
       </Card>
 
       <MealForm
+        key={`${editMeal?.id ?? "new"}-${selectedDate}-${formOpen ? "open" : "closed"}`}
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open)

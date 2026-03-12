@@ -1,8 +1,10 @@
 "use client"
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+
+import { supabase } from "@/shared/api/supabase"
 
 function makeQueryClient() {
   return new QueryClient({
@@ -27,11 +29,44 @@ function getQueryClient() {
   return browserQueryClient
 }
 
+function AuthSessionSync() {
+  const queryClient = useQueryClient()
+  const currentUserIdRef = useRef<string | null | undefined>(undefined)
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => {
+      currentUserIdRef.current = data.session?.user.id ?? null
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUserId = session?.user.id ?? null
+
+      if (
+        currentUserIdRef.current !== undefined &&
+        currentUserIdRef.current !== nextUserId
+      ) {
+        queryClient.clear()
+      }
+
+      currentUserIdRef.current = nextUserId
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [queryClient])
+
+  return null
+}
+
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(getQueryClient)
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthSessionSync />
       {children}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

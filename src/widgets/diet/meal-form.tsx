@@ -3,8 +3,10 @@
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
 import { CalendarIcon, Camera, X } from "lucide-react"
+import { toast } from "sonner"
 import type { Meal, MealInput, MealType } from "@/entities/meal"
 import { useCreateMeal, useUpdateMeal } from "@/features/diet"
+import { compressImageToWebP } from "@/shared/lib/media"
 import {
   Calendar,
   Dialog,
@@ -63,6 +65,12 @@ function formatDateLabel(value: string) {
   })
 }
 
+function revokePreviewUrl(url: string | null) {
+  if (url?.startsWith("blob:")) {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealFormProps) {
   const createMeal = useCreateMeal()
   const updateMeal = useUpdateMeal()
@@ -85,22 +93,37 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
 
   useEffect(() => {
     return () => {
-      if (photoPreview?.startsWith("blob:")) {
-        URL.revokeObjectURL(photoPreview)
-      }
+      revokePreviewUrl(photoPreview)
     }
   }, [photoPreview])
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setPhoto(file)
-    setPhotoPreview(URL.createObjectURL(file))
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 업로드할 수 있습니다")
+      e.target.value = ""
+      return
+    }
+
+    try {
+      const compressedPhoto = await compressImageToWebP(file)
+
+      revokePreviewUrl(photoPreview)
+      setPhoto(compressedPhoto)
+      setPhotoPreview(URL.createObjectURL(compressedPhoto))
+      e.target.value = ""
+    } catch {
+      toast.error("사진 압축에 실패했습니다")
+      e.target.value = ""
+    }
   }
 
   function removePhoto() {
+    revokePreviewUrl(photoPreview)
     setPhoto(null)
-    setPhotoPreview(null)
+    setPhotoPreview(editMeal?.photoUrl ?? null)
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
@@ -283,6 +306,7 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
                 <div className="flex flex-col items-center gap-1 text-muted-foreground">
                   <Camera className="size-6" />
                   <span className="text-xs">사진 추가</span>
+                  <span className="text-[11px]">업로드 전 WebP로 압축됩니다</span>
                 </div>
               </button>
             )}
