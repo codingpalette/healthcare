@@ -1,1 +1,1 @@
-// Workout page composition
+export { WorkoutPage } from "./ui/WorkoutPage"

@@ -1,0 +1,341 @@
+"use client"
+
+import Image from "next/image"
+import { useState } from "react"
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  Pencil,
+  Plus,
+  Timer,
+  Trash2,
+  Video,
+} from "lucide-react"
+import type { Workout } from "@/entities/workout"
+import { useDeleteWorkout, useMyWorkouts } from "@/features/workout"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Badge,
+  Button,
+  Calendar,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Skeleton,
+} from "@/shared/ui"
+import { WorkoutForm } from "@/widgets/workout/workout-form"
+
+function formatLocalDateValue(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function formatFullDate(dateStr: string) {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  })
+}
+
+function formatWorkoutMeta(workout: Workout) {
+  return [
+    workout.sets != null && `${workout.sets}세트`,
+    workout.reps != null && `${workout.reps}회`,
+    workout.weight != null && `${workout.weight}kg`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+}
+
+export function WorkoutDailyList() {
+  const today = formatLocalDateValue(new Date())
+  const todayDate = new Date(`${today}T00:00:00`)
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editWorkout, setEditWorkout] = useState<Workout | undefined>()
+  const [workoutToDelete, setWorkoutToDelete] = useState<Workout | undefined>()
+
+  const { data: workouts, isLoading } = useMyWorkouts(selectedDate, selectedDate)
+  const deleteWorkout = useDeleteWorkout()
+
+  const totals = (workouts ?? []).reduce(
+    (acc, workout) => ({
+      duration: acc.duration + (workout.durationMinutes ?? 0),
+      calories: acc.calories + (workout.caloriesBurned ?? 0),
+      sets: acc.sets + (workout.sets ?? 0),
+    }),
+    { duration: 0, calories: 0, sets: 0 }
+  )
+
+  function handleAdd() {
+    setEditWorkout(undefined)
+    setFormOpen(true)
+  }
+
+  function handleEdit(workout: Workout) {
+    setEditWorkout(workout)
+    setFormOpen(true)
+  }
+
+  function handleConfirmDelete() {
+    if (!workoutToDelete) return
+    deleteWorkout.mutate(workoutToDelete.id)
+    setWorkoutToDelete(undefined)
+  }
+
+  return (
+    <>
+      <Card className="border-0 shadow-md">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle className="text-base">일별 운동 기록</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                날짜별 운동일지와 인증 미디어를 관리하세요.
+              </p>
+            </div>
+            <Button size="sm" onClick={handleAdd}>
+              <Plus className="size-4" />
+              운동 추가
+            </Button>
+          </div>
+          <div className="flex items-center justify-center gap-2 pt-2">
+            <Button
+              aria-label="이전 운동 날짜"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => {
+                const previous = addDays(new Date(`${selectedDate}T00:00:00`), -1)
+                setSelectedDate(formatLocalDateValue(previous))
+              }}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+              <PopoverTrigger
+                render={
+                  <Button type="button" variant="outline" className="min-w-52 justify-between font-normal" />
+                }
+              >
+                <span>{formatFullDate(selectedDate)}</span>
+                <CalendarDays data-icon="inline-end" />
+              </PopoverTrigger>
+              <PopoverContent align="center" className="w-auto p-3">
+                <Calendar
+                  defaultMonth={new Date(`${selectedDate}T00:00:00`)}
+                  selected={new Date(`${selectedDate}T00:00:00`)}
+                  onSelect={(nextDate) => {
+                    if (nextDate > todayDate) return
+                    setSelectedDate(formatLocalDateValue(nextDate))
+                    setIsDatePickerOpen(false)
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              aria-label="다음 운동 날짜"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => {
+                const next = addDays(new Date(`${selectedDate}T00:00:00`), 1)
+                setSelectedDate(formatLocalDateValue(next))
+              }}
+              disabled={selectedDate >= today}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {workouts && workouts.length > 0 && (
+            <div className="grid gap-3 rounded-xl bg-muted p-3 text-center sm:grid-cols-4">
+              <div>
+                <p className="text-xs text-muted-foreground">운동 종목</p>
+                <p className="text-sm font-semibold">{workouts.length}개</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">총 세트</p>
+                <p className="text-sm font-semibold">{totals.sets}세트</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">운동 시간</p>
+                <p className="text-sm font-semibold">{totals.duration}분</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">소모 칼로리</p>
+                <p className="text-sm font-semibold">{totals.calories}kcal</p>
+              </div>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="h-28 w-full" />
+              ))}
+            </div>
+          ) : !workouts?.length ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              선택한 날짜에 기록된 운동이 없습니다
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {workouts.map((workout) => (
+                <div key={workout.id} className="rounded-2xl border bg-card p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row">
+                    {workout.mediaUrl ? (
+                      workout.mediaType === "video" ? (
+                        <video
+                          src={workout.mediaUrl}
+                          controls
+                          className="h-40 w-full shrink-0 rounded-xl bg-black object-cover sm:h-28 sm:w-32"
+                        />
+                      ) : (
+                        <Image
+                          src={workout.mediaUrl}
+                          alt={workout.exerciseName}
+                          width={192}
+                          height={144}
+                          className="h-40 w-full shrink-0 rounded-xl object-cover sm:h-28 sm:w-32"
+                          unoptimized
+                        />
+                      )
+                    ) : (
+                      <div className="flex h-40 w-full shrink-0 flex-col items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-28 sm:w-32">
+                        <Dumbbell className="size-6" />
+                        <span className="mt-2 text-xs">미디어 없음</span>
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{workout.exerciseName}</h3>
+                            {workout.mediaType === "video" && (
+                              <Badge variant="secondary" className="gap-1">
+                                <Video className="size-3" />
+                                영상
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {formatWorkoutMeta(workout) || "세트, 횟수, 중량 정보 없음"}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="운동 수정"
+                            onClick={() => handleEdit(workout)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="운동 삭제"
+                            onClick={() => setWorkoutToDelete(workout)}
+                          >
+                            <Trash2 className="size-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="rounded-full bg-muted px-2.5 py-1">
+                          <Timer className="mr-1 inline size-3" />
+                          {workout.durationMinutes != null ? `${workout.durationMinutes}분` : "시간 미입력"}
+                        </span>
+                        <span className="rounded-full bg-muted px-2.5 py-1">
+                          {workout.caloriesBurned != null
+                            ? `${workout.caloriesBurned}kcal`
+                            : "칼로리 미입력"}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 rounded-xl bg-muted/50 p-3">
+                        <p className="text-xs text-muted-foreground">운동일지</p>
+                        <p className="mt-1 text-sm">
+                          {workout.notes?.trim() || "작성된 운동일지가 없습니다."}
+                        </p>
+                      </div>
+
+                      {workout.trainerFeedback?.trim() && (
+                        <div className="mt-3 rounded-xl bg-primary/5 p-3">
+                          <p className="text-xs text-primary">트레이너 피드백</p>
+                          <p className="mt-1 text-sm">{workout.trainerFeedback}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <WorkoutForm
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open)
+          if (!open) setEditWorkout(undefined)
+        }}
+        editWorkout={editWorkout}
+        defaultDate={selectedDate}
+      />
+
+      <AlertDialog
+        open={!!workoutToDelete}
+        onOpenChange={(open) => {
+          if (!open) setWorkoutToDelete(undefined)
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>운동 기록을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              삭제한 운동 기록과 업로드한 미디어는 복구할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleConfirmDelete}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}

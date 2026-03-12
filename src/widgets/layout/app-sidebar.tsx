@@ -54,6 +54,7 @@ const commonNav = [
 // 트레이너 전용 네비게이션
 const trainerNav = [
   { title: "식단", href: "/diet", icon: UtensilsCrossed },
+  { title: "운동", href: "/workout", icon: Dumbbell },
   { title: "회원 관리", href: "/members", icon: Users },
 ]
 
