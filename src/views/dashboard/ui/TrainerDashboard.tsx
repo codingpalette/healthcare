@@ -4,6 +4,7 @@ import type { Profile } from "@/entities/user"
 import { PendingFeedbackCard } from "@/widgets/dashboard/pending-feedback-card"
 import { UnansweredQnaCard } from "@/widgets/dashboard/unanswered-qna-card"
 import { MemberOverviewCard } from "@/widgets/dashboard/member-overview-card"
+import { AttendanceOverviewCard } from "@/widgets/dashboard/attendance-overview-card"
 
 interface TrainerDashboardProps {
   profile: Profile
@@ -25,6 +26,7 @@ export function TrainerDashboard({ profile }: TrainerDashboardProps) {
         <p className="text-muted-foreground">{today}</p>
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <AttendanceOverviewCard />
         <PendingFeedbackCard />
         <UnansweredQnaCard />
         <MemberOverviewCard />

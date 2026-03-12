@@ -463,6 +463,179 @@ profiles.patch("/:id/soft-delete", async (c) => {
 
 app.route("/profiles", profiles)
 
+// 출석 관리 라우트
+const attendance = new Hono().use(authMiddleware)
+
+// 체크인
+attendance.post("/check-in", async (c) => {
+  const userId = c.get("userId")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // 오늘 체크인 후 체크아웃 안 한 레코드 확인
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const { data: existing } = await adminSupabase
+    .from("attendance")
+    .select("id")
+    .eq("user_id", userId)
+    .gte("check_in_at", todayStart.toISOString())
+    .is("check_out_at", null)
+    .limit(1)
+    .single()
+
+  if (existing) {
+    return c.json({ error: "이미 체크인 상태입니다" }, 400)
+  }
+
+  const { data, error } = await adminSupabase
+    .from("attendance")
+    .insert({ user_id: userId })
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data, 201)
+})
+
+// 체크아웃
+attendance.patch("/check-out", async (c) => {
+  const userId = c.get("userId")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const { data: existing } = await adminSupabase
+    .from("attendance")
+    .select("id")
+    .eq("user_id", userId)
+    .gte("check_in_at", todayStart.toISOString())
+    .is("check_out_at", null)
+    .limit(1)
+    .single()
+
+  if (!existing) {
+    return c.json({ error: "체크인 기록이 없습니다" }, 400)
+  }
+
+  const { data, error } = await adminSupabase
+    .from("attendance")
+    .update({ check_out_at: new Date().toISOString() })
+    .eq("id", existing.id)
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+// 내 출석 기록 조회
+attendance.get("/me", async (c) => {
+  const userId = c.get("userId")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // 기본값: 이번 달
+  const now = new Date()
+  const fromParam = c.req.query("from")
+  const toParam = c.req.query("to")
+  const from = fromParam ?? new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const to = toParam ?? new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
+
+  const { data, error } = await adminSupabase
+    .from("attendance")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("check_in_at", from)
+    .lte("check_in_at", to)
+    .order("check_in_at", { ascending: false })
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+// 오늘 전체 출석 기록 조회 (트레이너 전용)
+attendance.get("/today", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const { data, error } = await adminSupabase
+    .from("attendance")
+    .select("*, profiles!inner(name)")
+    .gte("check_in_at", todayStart.toISOString())
+    .order("check_in_at", { ascending: false })
+
+  if (error) return c.json({ error: error.message }, 400)
+
+  // profiles join 결과를 flat하게 변환
+  const result = (data ?? []).map((row: Record<string, unknown>) => {
+    const profiles = row.profiles as Record<string, unknown> | null
+    return {
+      ...row,
+      profiles: undefined,
+      user_name: profiles?.name ?? "",
+    }
+  })
+
+  return c.json(result)
+})
+
+// 특정 회원의 출석 기록 조회 (트레이너 전용)
+attendance.get("/members/:id", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const memberId = c.req.param("id")
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const now = new Date()
+  const fromParam = c.req.query("from")
+  const toParam = c.req.query("to")
+  const from = fromParam ?? new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const to = toParam ?? new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
+
+  const { data, error } = await adminSupabase
+    .from("attendance")
+    .select("*")
+    .eq("user_id", memberId)
+    .gte("check_in_at", from)
+    .lte("check_in_at", to)
+    .order("check_in_at", { ascending: false })
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+app.route("/attendance", attendance)
+
 export const GET = handle(app)
 export const POST = handle(app)
 export const PUT = handle(app)

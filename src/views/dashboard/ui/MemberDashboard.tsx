@@ -7,6 +7,7 @@ import {
   TodayDietCard,
   TodayWorkoutCard,
 } from "@/widgets/dashboard"
+import { AttendanceCheckCard } from "@/widgets/dashboard/attendance-check-card"
 
 interface MemberDashboardProps {
   profile: Profile
@@ -28,6 +29,7 @@ export function MemberDashboard({ profile }: MemberDashboardProps) {
         <p className="text-muted-foreground">{today}</p>
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <AttendanceCheckCard />
         <TodayDietCard />
         <TodayWorkoutCard />
         <RecentQnaCard />

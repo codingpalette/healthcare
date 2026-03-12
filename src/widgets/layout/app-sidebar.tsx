@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Wrench,
   Users,
+  CalendarCheck,
   LogOut,
   Settings,
   ChevronsUpDown,
@@ -45,6 +46,7 @@ import {
 // 공통 네비게이션 항목
 const commonNav = [
   { title: "대시보드", href: "/", icon: LayoutDashboard },
+  { title: "출석", href: "/attendance", icon: CalendarCheck },
   { title: "Q&A", href: "/qna", icon: MessageCircle },
   { title: "기구 가이드", href: "/equipment", icon: Wrench },
 ]
