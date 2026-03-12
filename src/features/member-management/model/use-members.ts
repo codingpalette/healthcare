@@ -3,6 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   getMembers,
+  getMyMembers,
+  assignTrainer,
+  unassignTrainer,
   createMember,
   updateMemberProfile,
   softDeleteMember,
@@ -45,6 +48,36 @@ export function useDeleteMember() {
 
   return useMutation({
     mutationFn: (memberId: string) => softDeleteMember(memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] })
+    },
+  })
+}
+
+export function useMyMembers() {
+  return useQuery({
+    queryKey: ["members", "mine"],
+    queryFn: getMyMembers,
+  })
+}
+
+export function useAssignTrainer() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ memberId, trainerId }: { memberId: string; trainerId: string }) =>
+      assignTrainer(memberId, trainerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] })
+    },
+  })
+}
+
+export function useUnassignTrainer() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (memberId: string) => unassignTrainer(memberId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] })
     },

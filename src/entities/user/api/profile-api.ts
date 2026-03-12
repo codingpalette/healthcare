@@ -10,6 +10,7 @@ function toProfile(row: Record<string, unknown>): Profile {
     email: (row.email as string) ?? null,
     phone: (row.phone as string) ?? null,
     avatarUrl: (row.avatar_url as string) ?? null,
+    trainerId: (row.trainer_id as string) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
     deletedAt: (row.deleted_at as string) ?? null,
@@ -174,6 +175,64 @@ export async function uploadAvatar(file: File): Promise<string> {
 
   const data = await res.json()
   return data.avatarUrl
+}
+
+export async function getMyMembers(): Promise<Profile[]> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error("인증되지 않은 사용자입니다")
+
+  const res = await fetch("/api/profiles/my-members", {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "내 회원 목록 조회에 실패했습니다")
+  }
+
+  const data = await res.json()
+  return (data as Record<string, unknown>[]).map(toProfile)
+}
+
+export async function assignTrainer(memberId: string, trainerId: string): Promise<Profile> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error("인증되지 않은 사용자입니다")
+
+  const res = await fetch(`/api/profiles/${memberId}/assign-trainer`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ trainerId }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "트레이너 배정에 실패했습니다")
+  }
+
+  const row = await res.json()
+  return toProfile(row)
+}
+
+export async function unassignTrainer(memberId: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error("인증되지 않은 사용자입니다")
+
+  const res = await fetch(`/api/profiles/${memberId}/unassign-trainer`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "트레이너 해제에 실패했습니다")
+  }
 }
 
 export async function updateRole(

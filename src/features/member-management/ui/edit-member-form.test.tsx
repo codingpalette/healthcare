@@ -32,6 +32,7 @@ const mockMember: Profile = {
   email: "hong@health.app",
   phone: "010-1234-5678",
   avatarUrl: null,
+  trainerId: null,
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
   deletedAt: null,

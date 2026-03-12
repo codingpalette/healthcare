@@ -16,6 +16,7 @@ const mockMembers: Profile[] = [
     email: "hong@health.app",
     phone: "010-1111-2222",
     avatarUrl: null,
+    trainerId: null,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
     deletedAt: null,
@@ -27,6 +28,7 @@ const mockMembers: Profile[] = [
     email: "kim@example.com",
     phone: "010-3333-4444",
     avatarUrl: null,
+    trainerId: null,
     createdAt: "2026-01-02T00:00:00Z",
     updatedAt: "2026-01-02T00:00:00Z",
     deletedAt: null,
@@ -38,6 +40,7 @@ const mockMembers: Profile[] = [
     email: "park@health.app",
     phone: "010-5555-6666",
     avatarUrl: null,
+    trainerId: null,
     createdAt: "2026-01-03T00:00:00Z",
     updatedAt: "2026-01-03T00:00:00Z",
     deletedAt: null,
@@ -52,6 +55,16 @@ vi.mock("@/features/member-management", () => ({
   useMembers: () => ({
     data: mockMembers,
     isLoading: false,
+  }),
+  useMyMembers: () => ({
+    data: [],
+    isLoading: false,
+  }),
+  useAssignTrainer: () => ({
+    mutate: vi.fn(),
+  }),
+  useUnassignTrainer: () => ({
+    mutate: vi.fn(),
   }),
   useDeleteMember: () => ({
     mutate: mockDeleteMember,

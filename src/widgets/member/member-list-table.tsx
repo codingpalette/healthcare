@@ -4,7 +4,7 @@ import { useState } from "react"
 import { MoreHorizontal, Plus, Search } from "lucide-react"
 import { toast } from "sonner"
 import type { Profile } from "@/entities/user"
-import { useMembers, useDeleteMember, useUpdateRole } from "@/features/member-management"
+import { useMembers, useMyMembers, useAssignTrainer, useUnassignTrainer, useDeleteMember, useUpdateRole } from "@/features/member-management"
 import {
   Button,
   Input,
@@ -29,13 +29,18 @@ interface MemberListTableProps {
 
 export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTableProps) {
   const [search, setSearch] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer">("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer" | "mine">("all")
   const { data: members, isLoading } = useMembers()
+  const { data: myMembers } = useMyMembers()
   const { mutate: deleteMember } = useDeleteMember()
   const { mutate: changeRole } = useUpdateRole()
+  const { mutate: assign } = useAssignTrainer()
+  const { mutate: unassign } = useUnassignTrainer()
 
-  const filtered = (members ?? []).filter((m) => {
-    if (roleFilter !== "all" && m.role !== roleFilter) return false
+  const myMemberIds = new Set((myMembers ?? []).map((m) => m.id))
+
+  const filtered = (roleFilter === "mine" ? (myMembers ?? []) : (members ?? [])).filter((m) => {
+    if (roleFilter !== "all" && roleFilter !== "mine" && m.role !== roleFilter) return false
     const q = search.toLowerCase()
     return (
       m.name.toLowerCase().includes(q) ||
@@ -55,6 +60,25 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
         onError: (err) => toast.error(err.message),
       }
     )
+  }
+
+  const handleAssign = (member: Profile) => {
+    if (!confirm(`${member.name}님을 내 회원으로 등록하시겠습니까?`)) return
+    assign(
+      { memberId: member.id, trainerId: currentUserId },
+      {
+        onSuccess: () => toast.success(`${member.name}님이 내 회원으로 등록되었습니다`),
+        onError: (err) => toast.error(err.message),
+      }
+    )
+  }
+
+  const handleUnassign = (member: Profile) => {
+    if (!confirm(`${member.name}님을 내 회원에서 해제하시겠습니까?`)) return
+    unassign(member.id, {
+      onSuccess: () => toast.success(`${member.name}님이 내 회원에서 해제되었습니다`),
+      onError: (err) => toast.error(err.message),
+    })
   }
 
   const handleDelete = (member: Profile) => {
@@ -96,7 +120,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
           />
         </div>
         <div className="flex gap-1">
-          {([["all", "전체"], ["member", "회원"], ["trainer", "트레이너"]] as const).map(([value, label]) => (
+          {([["all", "전체"], ["member", "회원"], ["trainer", "트레이너"], ["mine", "내 회원"]] as const).map(([value, label]) => (
             <Button
               key={value}
               variant={roleFilter === value ? "default" : "outline"}
@@ -178,6 +202,27 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
                           >
                             {member.role === "member" ? "트레이너로 변경" : "회원으로 변경"}
                           </DropdownMenuItem>
+                        )}
+                        {member.role === "member" && member.id !== currentUserId && (
+                          myMemberIds.has(member.id) ? (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleUnassign(member)
+                              }}
+                            >
+                              내 회원에서 해제
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAssign(member)
+                              }}
+                            >
+                              내 회원으로 등록
+                            </DropdownMenuItem>
+                          )
                         )}
                         <DropdownMenuItem
                           className="text-destructive"

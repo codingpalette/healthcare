@@ -84,13 +84,20 @@ export function AppSidebar({ profile }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-4 py-4">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
-            H
-          </div>
-          <span className="text-lg font-bold">Healthcare</span>
-        </Link>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" render={<Link href="/" />}>
+              <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
+                H
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">Healthcare</span>
+                <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
@@ -104,7 +111,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
                     render={<Link href={item.href} />}
                     isActive={pathname === item.href}
                   >
-                    <item.icon className="size-4" />
+                    <item.icon />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

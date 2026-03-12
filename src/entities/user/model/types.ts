@@ -7,6 +7,7 @@ export interface Profile {
   email: string | null
   phone: string | null
   avatarUrl: string | null
+  trainerId: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
