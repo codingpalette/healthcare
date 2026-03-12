@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState } from "react"
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Coffee, Sun, Moon, Apple } from "lucide-react"
 import type { Meal, MealType } from "@/entities/meal"
@@ -22,6 +23,14 @@ const MEAL_TYPE_CONFIG: Record<MealType, { label: string; icon: typeof Coffee }>
   snack: { label: "간식", icon: Apple },
 }
 
+function formatLocalDateValue(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00")
   return date.toLocaleDateString("ko-KR", {
@@ -35,11 +44,11 @@ function formatDate(dateStr: string): string {
 function addDays(dateStr: string, days: number): string {
   const date = new Date(dateStr + "T00:00:00")
   date.setDate(date.getDate() + days)
-  return date.toISOString().split("T")[0]
+  return formatLocalDateValue(date)
 }
 
 export function MealDailyList() {
-  const today = new Date().toISOString().split("T")[0]
+  const today = formatLocalDateValue(new Date())
   const [selectedDate, setSelectedDate] = useState(today)
   const [formOpen, setFormOpen] = useState(false)
   const [editMeal, setEditMeal] = useState<Meal | undefined>()
@@ -88,6 +97,7 @@ export function MealDailyList() {
           {/* 날짜 네비게이션 */}
           <div className="flex items-center justify-center gap-4 pt-2">
             <Button
+              aria-label="이전 날짜"
               variant="ghost"
               size="icon-sm"
               onClick={() => setSelectedDate(addDays(selectedDate, -1))}
@@ -96,6 +106,7 @@ export function MealDailyList() {
             </Button>
             <span className="text-sm font-medium">{formatDate(selectedDate)}</span>
             <Button
+              aria-label="다음 날짜"
               variant="ghost"
               size="icon-sm"
               onClick={() => setSelectedDate(addDays(selectedDate, 1))}
@@ -150,10 +161,13 @@ export function MealDailyList() {
                     className="flex items-start gap-3 rounded-xl bg-muted/50 p-3"
                   >
                     {meal.photoUrl ? (
-                      <img
+                      <Image
+                        width={64}
+                        height={64}
                         src={meal.photoUrl}
                         alt={config.label}
                         className="size-16 shrink-0 rounded-lg object-cover"
+                        unoptimized
                       />
                     ) : (
                       <div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-primary/10">
