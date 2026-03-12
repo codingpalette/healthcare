@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
+import Image from "next/image"
+import { useEffect, useRef, useState } from "react"
 import { CalendarIcon, Camera, X } from "lucide-react"
 import type { Meal, MealInput, MealType } from "@/entities/meal"
 import { useCreateMeal, useUpdateMeal } from "@/features/diet"
@@ -81,6 +82,14 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
 
   const isSubmitting = createMeal.isPending || updateMeal.isPending
   const selectedDate = parseDateValue(date)
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(photoPreview)
+      }
+    }
+  }, [photoPreview])
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -248,11 +257,14 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
           <div className="space-y-2">
             <Label>사진</Label>
             {photoPreview ? (
-              <div className="relative">
-                <img
+              <div className="relative h-40 w-full overflow-hidden rounded-lg">
+                <Image
+                  fill
                   src={photoPreview}
                   alt="식단 사진 미리보기"
-                  className="h-40 w-full rounded-lg object-cover"
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, 448px"
+                  unoptimized
                 />
                 <button
                   type="button"
