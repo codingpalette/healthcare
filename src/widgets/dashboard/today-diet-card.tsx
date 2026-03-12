@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { UtensilsCrossed, Coffee, Sun, Moon, Apple } from "lucide-react"
+import { UtensilsCrossed, Coffee, Sun, Moon, Apple, MessagesSquare } from "lucide-react"
 import type { MealType } from "@/entities/meal"
 import { useMyMeals } from "@/features/diet"
 
@@ -68,16 +68,28 @@ export function TodayDietCard() {
             )
           })}
         </div>
-        <Link
-          href="/diet"
-          className={cn(
-            buttonVariants({ size: "sm", variant: "outline" }),
-            "w-full"
-          )}
-        >
-          <UtensilsCrossed className="size-4" />
-          식단 기록하기
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            href="/diet"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "w-full"
+            )}
+          >
+            <UtensilsCrossed className="size-4" />
+            식단 기록하기
+          </Link>
+          <Link
+            href="/chat"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "w-full"
+            )}
+          >
+            <MessagesSquare className="size-4" />
+            관리톡 열기
+          </Link>
+        </div>
       </CardContent>
     </Card>
   )

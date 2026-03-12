@@ -2,19 +2,24 @@
 
 import Image from "next/image"
 import { useState } from "react"
+import Link from "next/link"
 import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Dumbbell,
+  MessagesSquare,
   Pencil,
   Plus,
   Timer,
   Trash2,
   Video,
 } from "lucide-react"
+import { toast } from "sonner"
 import type { Workout } from "@/entities/workout"
 import { useDeleteWorkout, useMyWorkouts } from "@/features/workout"
+import { useMyProfile } from "@/features/profile"
+import { useEnsureChatRoom, useSendChatMessage } from "@/features/chat"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +40,9 @@ import {
   PopoverContent,
   PopoverTrigger,
   Skeleton,
+  buttonVariants,
 } from "@/shared/ui"
+import { cn } from "@/shared/lib/utils"
 import { WorkoutForm } from "@/widgets/workout/workout-form"
 
 function formatLocalDateValue(date: Date): string {
@@ -82,6 +89,9 @@ export function WorkoutDailyList() {
 
   const { data: workouts, isLoading } = useMyWorkouts(selectedDate, selectedDate)
   const deleteWorkout = useDeleteWorkout()
+  const { data: profile } = useMyProfile()
+  const ensureChatRoom = useEnsureChatRoom()
+  const sendChatMessage = useSendChatMessage()
 
   const totals = (workouts ?? []).reduce(
     (acc, workout) => ({
@@ -106,6 +116,25 @@ export function WorkoutDailyList() {
     if (!workoutToDelete) return
     deleteWorkout.mutate(workoutToDelete.id)
     setWorkoutToDelete(undefined)
+  }
+
+  async function handleShareToChat(workout: Workout) {
+    if (!profile?.trainerId) {
+      toast.error("배정된 트레이너가 없어 관리톡으로 공유할 수 없습니다")
+      return
+    }
+
+    try {
+      const room = await ensureChatRoom.mutateAsync(profile.trainerId)
+      await sendChatMessage.mutateAsync({
+        roomId: room.id,
+        type: "workout_share",
+        workoutId: workout.id,
+      })
+      toast.success("운동 인증을 관리톡으로 공유했습니다")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "관리톡 공유에 실패했습니다")
+    }
   }
 
   return (
@@ -285,6 +314,28 @@ export function WorkoutDailyList() {
                         <p className="mt-1 text-sm">
                           {workout.notes?.trim() || "작성된 운동일지가 없습니다."}
                         </p>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleShareToChat(workout)}
+                          disabled={
+                            !profile?.trainerId ||
+                            ensureChatRoom.isPending ||
+                            sendChatMessage.isPending
+                          }
+                        >
+                          <MessagesSquare className="size-3.5" />
+                          관리톡 공유
+                        </Button>
+                        <Link
+                          href="/chat"
+                          className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                        >
+                          관리톡 보기
+                        </Link>
                       </div>
 
                       {workout.trainerFeedback?.trim() && (

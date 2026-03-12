@@ -9,6 +9,7 @@ import { Button } from "@/shared/ui"
 // 경로별 페이지 제목 매핑
 const pageTitles: Record<string, string> = {
   "/": "대시보드",
+  "/chat": "1:1 관리톡",
   "/diet": "식단 관리",
   "/workout": "운동 관리",
   "/qna": "Q&A",

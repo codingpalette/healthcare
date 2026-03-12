@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useState } from "react"
 import {
   Camera,
@@ -9,13 +10,17 @@ import {
   ChevronRight,
   Clock3,
   Flame,
+  MessageSquarePlus,
   UtensilsCrossed,
 } from "lucide-react"
 import { useMemberMeals, useTodayMeals } from "@/features/diet"
+import { useEnsureChatRoom, useSendChatMessage } from "@/features/chat"
 import type { MealType, MealWithProfile } from "@/entities/meal"
+import { toast } from "sonner"
 import {
   Badge,
   Button,
+  buttonVariants,
   Calendar,
   Card,
   CardContent,
@@ -38,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/ui"
+import { cn } from "@/shared/lib/utils"
 
 const MEAL_TYPE_LABEL: Record<MealType, string> = {
   breakfast: "아침",
@@ -111,6 +117,27 @@ function MealDetailDialog({
     historyFrom,
     selectedDate
   )
+  const ensureChatRoom = useEnsureChatRoom()
+  const sendChatMessage = useSendChatMessage()
+  const [feedbackDraft, setFeedbackDraft] = useState("")
+
+  async function handleSendFeedback() {
+    if (!meal || !feedbackDraft.trim()) return
+
+    try {
+      const room = await ensureChatRoom.mutateAsync(meal.userId)
+      await sendChatMessage.mutateAsync({
+        roomId: room.id,
+        type: "feedback",
+        content: feedbackDraft.trim(),
+        mealId: meal.id,
+      })
+      setFeedbackDraft("")
+      toast.success("식단 피드백을 관리톡으로 전송했습니다")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "식단 피드백 전송에 실패했습니다")
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -179,6 +206,43 @@ function MealDetailDialog({
                   <p className="mt-1 text-sm text-foreground">
                     {formatMacros(meal) || "등록된 영양 정보가 없습니다."}
                   </p>
+                </div>
+                <div className="rounded-lg bg-background p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">관리톡 식단 피드백</p>
+                      <p className="mt-1 text-sm text-foreground">
+                        회원에게 바로 식단 코멘트를 전송할 수 있습니다.
+                      </p>
+                    </div>
+                    <Link
+                      href="/chat"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      관리톡 보기
+                    </Link>
+                  </div>
+                  <textarea
+                    className="mt-3 flex min-h-[96px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder="예: 단백질 구성이 좋아요. 저녁에는 채소를 조금 더 추가해보세요."
+                    value={feedbackDraft}
+                    onChange={(event) => setFeedbackDraft(event.target.value)}
+                  />
+                  <div className="mt-3 flex justify-end">
+                    <Button
+                      onClick={handleSendFeedback}
+                      disabled={
+                        !feedbackDraft.trim() ||
+                        ensureChatRoom.isPending ||
+                        sendChatMessage.isPending
+                      }
+                    >
+                      <MessageSquarePlus className="size-4" />
+                      {ensureChatRoom.isPending || sendChatMessage.isPending
+                        ? "전송 중..."
+                        : "관리톡으로 피드백 보내기"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Dumbbell, Flame, Timer, TrendingUp } from "lucide-react"
+import { Dumbbell, Flame, Timer, TrendingUp, MessagesSquare } from "lucide-react"
 import { useMyWorkouts } from "@/features/workout"
 
 import {
@@ -71,16 +71,28 @@ export function TodayWorkoutCard() {
             ? `${workouts?.length ?? 0}개의 운동 기록이 있습니다`
             : "오늘 기록된 운동이 없습니다"}
         </p>
-        <Link
-          href="/workout"
-          className={cn(
-            buttonVariants({ size: "sm", variant: "outline" }),
-            "w-full"
-          )}
-        >
-          <Dumbbell className="size-4" />
-          운동 기록하기
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            href="/workout"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "w-full"
+            )}
+          >
+            <Dumbbell className="size-4" />
+            운동 기록하기
+          </Link>
+          <Link
+            href="/chat"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "w-full"
+            )}
+          >
+            <MessagesSquare className="size-4" />
+            관리톡 열기
+          </Link>
+        </div>
       </CardContent>
     </Card>
   )

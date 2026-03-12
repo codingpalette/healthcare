@@ -2,9 +2,13 @@
 
 import Image from "next/image"
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Coffee, Sun, Moon, Apple } from "lucide-react"
+import Link from "next/link"
+import { toast } from "sonner"
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Coffee, Sun, Moon, Apple, MessagesSquare } from "lucide-react"
 import type { Meal, MealType } from "@/entities/meal"
 import { useMyMeals, useDeleteMeal } from "@/features/diet"
+import { useMyProfile } from "@/features/profile"
+import { useEnsureChatRoom, useSendChatMessage } from "@/features/chat"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +25,9 @@ import {
   Button,
   Badge,
   Skeleton,
+  buttonVariants,
 } from "@/shared/ui"
+import { cn } from "@/shared/lib/utils"
 import { MealForm } from "@/widgets/diet/meal-form"
 
 const MEAL_TYPE_CONFIG: Record<MealType, { label: string; icon: typeof Coffee }> = {
@@ -64,6 +70,9 @@ export function MealDailyList() {
 
   const { data: meals, isLoading } = useMyMeals(selectedDate, selectedDate)
   const deleteMeal = useDeleteMeal()
+  const { data: profile } = useMyProfile()
+  const ensureChatRoom = useEnsureChatRoom()
+  const sendChatMessage = useSendChatMessage()
 
   // 일일 영양소 합계
   const totals = (meals ?? []).reduce(
@@ -94,6 +103,25 @@ export function MealDailyList() {
     if (!mealToDelete) return
     deleteMeal.mutate(mealToDelete.id)
     setMealToDelete(undefined)
+  }
+
+  async function handleShareToChat(meal: Meal) {
+    if (!profile?.trainerId) {
+      toast.error("배정된 트레이너가 없어 관리톡으로 공유할 수 없습니다")
+      return
+    }
+
+    try {
+      const room = await ensureChatRoom.mutateAsync(profile.trainerId)
+      await sendChatMessage.mutateAsync({
+        roomId: room.id,
+        type: "meal_share",
+        mealId: meal.id,
+      })
+      toast.success("식단 인증을 관리톡으로 공유했습니다")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "관리톡 공유에 실패했습니다")
+    }
   }
 
   return (
@@ -214,6 +242,27 @@ export function MealDailyList() {
                             .join(" · ")}
                         </p>
                       )}
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleShareToChat(meal)}
+                          disabled={
+                            !profile?.trainerId ||
+                            ensureChatRoom.isPending ||
+                            sendChatMessage.isPending
+                          }
+                        >
+                          <MessagesSquare className="size-3.5" />
+                          관리톡 공유
+                        </Button>
+                        <Link
+                          href="/chat"
+                          className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                        >
+                          관리톡 보기
+                        </Link>
+                      </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
                       <Button

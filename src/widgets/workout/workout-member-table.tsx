@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import {
   CalendarDays,
@@ -9,11 +10,17 @@ import {
   Clock3,
   Dumbbell,
   Flame,
+  MessageSquarePlus,
   MessageSquareText,
   Timer,
   Video,
 } from "lucide-react"
+import { toast } from "sonner"
 import type { Workout, WorkoutWithProfile } from "@/entities/workout"
+import {
+  useEnsureChatRoom,
+  useSendChatMessage,
+} from "@/features/chat"
 import {
   useMemberWorkouts,
   useTodayWorkouts,
@@ -22,6 +29,7 @@ import {
 import {
   Badge,
   Button,
+  buttonVariants,
   Calendar,
   Card,
   CardContent,
@@ -44,6 +52,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/ui"
+import { cn } from "@/shared/lib/utils"
 
 function formatLocalDateValue(date: Date): string {
   const year = date.getFullYear()
@@ -103,6 +112,8 @@ function WorkoutDetailDialog({
     selectedDate
   )
   const updateWorkoutFeedback = useUpdateWorkoutFeedback()
+  const ensureChatRoom = useEnsureChatRoom()
+  const sendChatMessage = useSendChatMessage()
   const [feedback, setFeedback] = useState(workout?.trainerFeedback ?? "")
 
   useEffect(() => {
@@ -111,10 +122,25 @@ function WorkoutDetailDialog({
 
   async function handleSaveFeedback() {
     if (!workout) return
-    await updateWorkoutFeedback.mutateAsync({
-      id: workout.id,
-      trainerFeedback: feedback.trim(),
-    })
+    const trimmedFeedback = feedback.trim()
+    if (!trimmedFeedback) return
+
+    try {
+      await updateWorkoutFeedback.mutateAsync({
+        id: workout.id,
+        trainerFeedback: trimmedFeedback,
+      })
+      const room = await ensureChatRoom.mutateAsync(workout.userId)
+      await sendChatMessage.mutateAsync({
+        roomId: room.id,
+        type: "feedback",
+        content: trimmedFeedback,
+        workoutId: workout.id,
+      })
+      toast.success("운동 피드백을 관리톡으로 전송했습니다")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "운동 피드백 전송에 실패했습니다")
+    }
   }
 
   return (
@@ -213,14 +239,22 @@ function WorkoutDetailDialog({
             </div>
 
             <div className="rounded-2xl border bg-card p-4">
-              <div className="flex items-center gap-2">
-                <MessageSquareText className="size-4 text-primary" />
-                <div>
-                  <h3 className="font-medium">트레이너 피드백</h3>
-                  <p className="text-sm text-muted-foreground">
-                    회원이 다음 운동 때 참고할 코멘트를 남겨주세요.
-                  </p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquareText className="size-4 text-primary" />
+                  <div>
+                    <h3 className="font-medium">트레이너 피드백</h3>
+                    <p className="text-sm text-muted-foreground">
+                      회원이 다음 운동 때 참고할 코멘트를 남겨주세요.
+                    </p>
+                  </div>
                 </div>
+                <Link
+                  href="/chat"
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  관리톡 보기
+                </Link>
               </div>
               <textarea
                 className="mt-3 flex min-h-[110px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -229,8 +263,19 @@ function WorkoutDetailDialog({
                 onChange={(event) => setFeedback(event.target.value)}
               />
               <div className="mt-4 flex justify-end">
-                <Button onClick={handleSaveFeedback} disabled={updateWorkoutFeedback.isPending}>
-                  {updateWorkoutFeedback.isPending ? "저장 중..." : "피드백 저장"}
+                <Button
+                  onClick={handleSaveFeedback}
+                  disabled={
+                    !feedback.trim() ||
+                    updateWorkoutFeedback.isPending ||
+                    ensureChatRoom.isPending ||
+                    sendChatMessage.isPending
+                  }
+                >
+                  <MessageSquarePlus className="size-4" />
+                  {updateWorkoutFeedback.isPending || ensureChatRoom.isPending || sendChatMessage.isPending
+                    ? "전송 중..."
+                    : "저장하고 관리톡 보내기"}
                 </Button>
               </div>
             </div>

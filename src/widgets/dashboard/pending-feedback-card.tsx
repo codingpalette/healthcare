@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ClipboardCheck, Camera, Dumbbell } from "lucide-react"
+import { ClipboardCheck, Camera, Dumbbell, MessagesSquare } from "lucide-react"
 import { useTodayMeals } from "@/features/diet"
 import { useTodayWorkouts } from "@/features/workout"
 import {
@@ -66,7 +66,7 @@ export function PendingFeedbackCard() {
               ? "식단과 운동 메뉴에서 회원 인증 내역을 확인할 수 있습니다"
               : "확인할 인증글이 없습니다"}
         </p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Link
             href="/diet"
             className={cn(
@@ -84,6 +84,16 @@ export function PendingFeedbackCard() {
             )}
           >
             운동 인증 확인
+          </Link>
+          <Link
+            href="/chat"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "w-full"
+            )}
+          >
+            <MessagesSquare className="size-4" />
+            관리톡
           </Link>
         </div>
       </CardContent>

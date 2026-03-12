@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import type { Meal, MealWithProfile } from "@/entities/meal"
 
 import { MealMemberTable } from "./meal-member-table"
@@ -82,6 +82,9 @@ const useTodayMealsMock = vi.fn((date?: string) => ({
   isLoading: false,
 }))
 
+const ensureChatRoomMock = vi.fn()
+const sendChatMessageMock = vi.fn()
+
 vi.mock("@/features/diet", () => ({
   useTodayMeals: (date?: string) => useTodayMealsMock(date),
   useMemberMeals: () => ({
@@ -90,15 +93,38 @@ vi.mock("@/features/diet", () => ({
   }),
 }))
 
+vi.mock("@/features/chat", () => ({
+  useEnsureChatRoom: () => ({
+    mutateAsync: ensureChatRoomMock,
+    isPending: false,
+  }),
+  useSendChatMessage: () => ({
+    mutateAsync: sendChatMessageMock,
+    isPending: false,
+  }),
+}))
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}))
+
 describe("MealMemberTable", () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date("2026-03-12T12:00:00+09:00"))
     useTodayMealsMock.mockClear()
+    ensureChatRoomMock.mockReset()
+    ensureChatRoomMock.mockResolvedValue({ id: "room-1" })
+    sendChatMessageMock.mockReset()
+    sendChatMessageMock.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    cleanup()
   })
 
   it("회원 식단 행을 누르면 상세 다이얼로그와 최근 기록을 보여준다", () => {
@@ -129,5 +155,27 @@ describe("MealMemberTable", () => {
 
     expect(useTodayMealsMock).toHaveBeenLastCalledWith("2026-03-11")
     expect(screen.getAllByText("김영희").length).toBeGreaterThan(0)
+  })
+
+  it("식단 상세에서 관리톡 피드백 전송을 누르면 식단 첨부 피드백 메시지를 보낸다", async () => {
+    render(<MealMemberTable />)
+
+    fireEvent.click(screen.getByText("홍길동"))
+    fireEvent.change(
+      screen.getByPlaceholderText("예: 단백질 구성이 좋아요. 저녁에는 채소를 조금 더 추가해보세요."),
+      { target: { value: "단백질 구성이 좋아요. 저녁엔 채소를 더 추가해보세요." } }
+    )
+    fireEvent.click(screen.getByRole("button", { name: "관리톡으로 피드백 보내기" }))
+
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(ensureChatRoomMock).toHaveBeenCalledWith("member-1")
+    expect(sendChatMessageMock).toHaveBeenCalledWith({
+      roomId: "room-1",
+      type: "feedback",
+      content: "단백질 구성이 좋아요. 저녁엔 채소를 더 추가해보세요.",
+      mealId: "meal-1",
+    })
   })
 })

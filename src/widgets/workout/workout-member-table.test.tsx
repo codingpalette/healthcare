@@ -95,6 +95,8 @@ const useTodayWorkoutsMock = vi.fn((date?: string) => ({
 }))
 
 const mutateAsyncMock = vi.fn()
+const ensureChatRoomMock = vi.fn()
+const sendChatMessageMock = vi.fn()
 
 vi.mock("@/features/workout", () => ({
   useTodayWorkouts: (date?: string) => useTodayWorkoutsMock(date),
@@ -108,12 +110,34 @@ vi.mock("@/features/workout", () => ({
   }),
 }))
 
+vi.mock("@/features/chat", () => ({
+  useEnsureChatRoom: () => ({
+    mutateAsync: ensureChatRoomMock,
+    isPending: false,
+  }),
+  useSendChatMessage: () => ({
+    mutateAsync: sendChatMessageMock,
+    isPending: false,
+  }),
+}))
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}))
+
 describe("WorkoutMemberTable", () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date("2026-03-12T12:00:00+09:00"))
     useTodayWorkoutsMock.mockClear()
     mutateAsyncMock.mockClear()
+    ensureChatRoomMock.mockReset()
+    ensureChatRoomMock.mockResolvedValue({ id: "room-1" })
+    sendChatMessageMock.mockReset()
+    sendChatMessageMock.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -141,7 +165,7 @@ describe("WorkoutMemberTable", () => {
     expect(screen.getByText("김영희")).toBeInTheDocument()
   })
 
-  it("피드백 저장 버튼을 누르면 트레이너 피드백 저장 mutation을 호출한다", () => {
+  it("피드백 전송 버튼을 누르면 운동 피드백 저장과 관리톡 전송을 함께 호출한다", async () => {
     render(<WorkoutMemberTable />)
 
     fireEvent.click(screen.getAllByText("홍길동")[0])
@@ -149,11 +173,20 @@ describe("WorkoutMemberTable", () => {
       screen.getByPlaceholderText(/예: 마지막 세트에서 상체가 살짝 흔들려서/),
       { target: { value: "무릎 정렬이 좋아졌습니다." } }
     )
-    fireEvent.click(screen.getByRole("button", { name: "피드백 저장" }))
+    fireEvent.click(screen.getByRole("button", { name: "저장하고 관리톡 보내기" }))
 
     expect(mutateAsyncMock).toHaveBeenCalledWith({
       id: "workout-1",
       trainerFeedback: "무릎 정렬이 좋아졌습니다.",
+    })
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(ensureChatRoomMock).toHaveBeenCalledWith("member-1")
+    expect(sendChatMessageMock).toHaveBeenCalledWith({
+      roomId: "room-1",
+      type: "feedback",
+      content: "무릎 정렬이 좋아졌습니다.",
+      workoutId: "workout-1",
     })
   })
 })

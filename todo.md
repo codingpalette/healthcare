@@ -58,14 +58,14 @@
 - [x] 트레이너 운동 피드백 기능 (간단한 코멘트 작성)
 
 ## 1:1 관리톡 (/chat)
-- [ ] 채팅 엔티티 DB 마이그레이션 (chat_rooms, chat_messages 테이블)
-- [ ] 채팅 CRUD (Hono API 엔드포인트)
-- [ ] 실시간 메시지 (Supabase Realtime)
-- [ ] 1:1 채팅 UI (트레이너-회원 간)
-- [ ] 식단인증/운동인증 사진 채팅 내 공유
-- [ ] 트레이너 피드백 메시지 기능
-- [ ] 읽음/안읽음 표시
-- [ ] 채팅 목록 UI (최근 메시지 미리보기)
+- [x] 채팅 엔티티 DB 마이그레이션 (chat_rooms, chat_messages 테이블)
+- [x] 채팅 CRUD (Hono API 엔드포인트)
+- [x] 실시간 메시지 (Supabase Realtime)
+- [x] 1:1 채팅 UI (트레이너-회원 간)
+- [x] 식단인증/운동인증 사진 채팅 내 공유
+- [x] 트레이너 피드백 메시지 기능
+- [x] 읽음/안읽음 표시
+- [x] 채팅 목록 UI (최근 메시지 미리보기)
 
 ## 1:1 Q&A톡 (/qna)
 - [ ] Q&A 페이지 라우트 생성 (`src/app/(authenticated)/qna/page.tsx`)
