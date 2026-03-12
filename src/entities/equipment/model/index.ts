@@ -1,0 +1,1 @@
+// Equipment entity model

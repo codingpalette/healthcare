@@ -1,0 +1,1 @@
+// Workout entity model
