@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import type { Profile } from "@/entities/user"
 import { useMembers, useMyMembers, useAssignTrainer, useUnassignTrainer, useDeleteMember, useUpdateRole } from "@/features/member-management"
 import {
+  Badge,
   Button,
   Input,
   Table,
@@ -109,7 +110,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -119,22 +120,24 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
             className="pl-9"
           />
         </div>
-        <div className="flex gap-1">
-          {([["all", "전체"], ["member", "회원"], ["trainer", "트레이너"], ["mine", "내 회원"]] as const).map(([value, label]) => (
-            <Button
-              key={value}
-              variant={roleFilter === value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRoleFilter(value)}
-            >
-              {label}
-            </Button>
-          ))}
+        <div className="flex items-center justify-between gap-3 sm:justify-start">
+          <div className="flex gap-1 overflow-x-auto">
+            {([["all", "전체"], ["member", "회원"], ["trainer", "트레이너"], ["mine", "내 회원"]] as const).map(([value, label]) => (
+              <Button
+                key={value}
+                variant={roleFilter === value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRoleFilter(value)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+          <Button onClick={onAdd} size="sm" className="shrink-0">
+            <Plus className="mr-1 size-4" />
+            유저 추가
+          </Button>
         </div>
-        <Button onClick={onAdd} size="sm">
-          <Plus className="mr-1 size-4" />
-          유저 추가
-        </Button>
       </div>
 
       {filtered.length === 0 ? (
@@ -146,7 +149,96 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
           </p>
         </div>
       ) : (
-        <div className="rounded-md border">
+        <>
+        {/* 모바일 카드 뷰 */}
+        <div className="space-y-2 md:hidden">
+          {filtered.map((member) => (
+            <div
+              key={member.id}
+              className="cursor-pointer rounded-lg border p-3 active:bg-muted/50"
+              onClick={() => onEdit(member)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{member.name}</span>
+                  <Badge variant={member.role === "trainer" ? "default" : "secondary"}>
+                    {member.role === "trainer" ? "트레이너" : "회원"}
+                  </Badge>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="size-8 p-0"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="size-4" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEdit(member)
+                      }}
+                    >
+                      수정
+                    </DropdownMenuItem>
+                    {member.id !== currentUserId && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRoleChange(member)
+                        }}
+                      >
+                        {member.role === "member" ? "트레이너로 변경" : "회원으로 변경"}
+                      </DropdownMenuItem>
+                    )}
+                    {member.role === "member" && member.id !== currentUserId && (
+                      myMemberIds.has(member.id) ? (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleUnassign(member)
+                          }}
+                        >
+                          내 회원에서 해제
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleAssign(member)
+                          }}
+                        >
+                          내 회원으로 등록
+                        </DropdownMenuItem>
+                      )
+                    )}
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(member)
+                      }}
+                    >
+                      삭제
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {member.phone ?? "-"}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* 데스크톱 테이블 뷰 */}
+        <div className="hidden rounded-md border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -241,6 +333,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
             </TableBody>
           </Table>
         </div>
+        </>
       )}
     </div>
   )

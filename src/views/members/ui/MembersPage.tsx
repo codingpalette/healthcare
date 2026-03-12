@@ -5,6 +5,8 @@ import type { Profile } from "@/entities/user"
 import { AddMemberForm, EditMemberForm } from "@/features/member-management"
 import { MemberListTable } from "@/widgets/member"
 import {
+  Card,
+  CardContent,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -29,11 +31,15 @@ export function MembersPage({ currentUserId }: MembersPageProps) {
         </p>
       </div>
 
-      <MemberListTable
-        currentUserId={currentUserId}
-        onAdd={() => setAddOpen(true)}
-        onEdit={(member) => setEditMember(member)}
-      />
+      <Card className="border-0 shadow-md">
+        <CardContent className="p-4 sm:p-6">
+          <MemberListTable
+            currentUserId={currentUserId}
+            onAdd={() => setAddOpen(true)}
+            onEdit={(member) => setEditMember(member)}
+          />
+        </CardContent>
+      </Card>
 
       {/* 유저 추가 다이얼로그 */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
