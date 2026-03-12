@@ -19,5 +19,5 @@ export default async function MembersRoute() {
 
   if (profile?.role !== "trainer") redirect("/")
 
-  return <MembersPage />
+  return <MembersPage currentUserId={user.id} />
 }

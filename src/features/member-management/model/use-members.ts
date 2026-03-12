@@ -6,8 +6,9 @@ import {
   createMember,
   updateMemberProfile,
   softDeleteMember,
+  updateRole,
 } from "@/entities/user"
-import type { CreateMemberRequest, UpdateMemberRequest } from "@/entities/user"
+import type { CreateMemberRequest, UpdateMemberRequest, UpdateRoleRequest } from "@/entities/user"
 
 export function useMembers() {
   return useQuery({
@@ -44,6 +45,18 @@ export function useDeleteMember() {
 
   return useMutation({
     mutationFn: (memberId: string) => softDeleteMember(memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] })
+    },
+  })
+}
+
+export function useUpdateRole() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ memberId, data }: { memberId: string; data: UpdateRoleRequest }) =>
+      updateRole(memberId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] })
     },

@@ -13,9 +13,14 @@ vi.mock("sonner", () => ({
 }))
 
 const mockMutate = vi.fn()
+const mockChangeRole = vi.fn()
 vi.mock("@/features/member-management/model/use-members", () => ({
   useUpdateMember: () => ({
     mutate: mockMutate,
+    isPending: false,
+  }),
+  useUpdateRole: () => ({
+    mutate: mockChangeRole,
     isPending: false,
   }),
 }))
@@ -24,7 +29,9 @@ const mockMember: Profile = {
   id: "member-1",
   role: "member",
   name: "홍길동",
+  email: "hong@health.app",
   phone: "010-1234-5678",
+  avatarUrl: null,
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
   deletedAt: null,
@@ -35,7 +42,7 @@ function renderForm(props: { member?: Profile; onSuccess?: () => void } = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const result = render(
     <QueryClientProvider client={qc}>
-      <EditMemberForm member={props.member ?? mockMember} onSuccess={props.onSuccess} />
+      <EditMemberForm member={props.member ?? mockMember} currentUserId="current-user" onSuccess={props.onSuccess} />
     </QueryClientProvider>
   )
   const container = result.container
@@ -94,7 +101,7 @@ describe("EditMemberForm", () => {
 
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalled()
-      expect(toast.success).toHaveBeenCalledWith("회원 정보가 수정되었습니다")
+      expect(toast.success).toHaveBeenCalledWith("유저 정보가 수정되었습니다")
     })
   })
 })

@@ -4,7 +4,9 @@ export interface Profile {
   id: string
   role: UserRole
   name: string
+  email: string | null
   phone: string | null
+  avatarUrl: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -20,4 +22,8 @@ export interface CreateMemberRequest {
 export interface UpdateMemberRequest {
   name?: string
   phone?: string
+}
+
+export interface UpdateRoleRequest {
+  role: UserRole
 }

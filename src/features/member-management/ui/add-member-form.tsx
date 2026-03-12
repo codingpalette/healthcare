@@ -40,7 +40,7 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
       { email: resolvedEmail, password, name: name.trim(), phone: phone.trim() || undefined },
       {
         onSuccess: () => {
-          toast.success("회원이 추가되었습니다")
+          toast.success("유저가 추가되었습니다")
           setEmail("")
           setPassword("")
           setName("")
@@ -101,7 +101,7 @@ export function AddMemberForm({ onSuccess }: AddMemberFormProps) {
         />
       </div>
       <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "추가 중..." : "회원 추가"}
+        {isPending ? "추가 중..." : "유저 추가"}
       </Button>
     </form>
   )

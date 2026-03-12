@@ -3,19 +3,23 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button, Input, Label } from "@/shared/ui"
-import type { Profile } from "@/entities/user"
-import { useUpdateMember } from "@/features/member-management/model/use-members"
+import type { Profile, UserRole } from "@/entities/user"
+import { useUpdateMember, useUpdateRole } from "@/features/member-management/model/use-members"
 
 interface EditMemberFormProps {
   member: Profile
+  currentUserId: string
   onSuccess?: () => void
 }
 
-export function EditMemberForm({ member, onSuccess }: EditMemberFormProps) {
+export function EditMemberForm({ member, currentUserId, onSuccess }: EditMemberFormProps) {
   const [name, setName] = useState(member.name)
   const [phone, setPhone] = useState(member.phone ?? "")
+  const [role, setRole] = useState<UserRole>(member.role)
 
   const { mutate, isPending } = useUpdateMember()
+  const { mutate: changeRole, isPending: isRolePending } = useUpdateRole()
+  const canChangeRole = member.id !== currentUserId
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,6 +29,16 @@ export function EditMemberForm({ member, onSuccess }: EditMemberFormProps) {
       return
     }
 
+    // 권한 변경이 있으면 먼저 처리
+    if (canChangeRole && role !== member.role) {
+      changeRole(
+        { memberId: member.id, data: { role } },
+        {
+          onError: (error) => toast.error(error.message),
+        }
+      )
+    }
+
     mutate(
       {
         memberId: member.id,
@@ -32,7 +46,7 @@ export function EditMemberForm({ member, onSuccess }: EditMemberFormProps) {
       },
       {
         onSuccess: () => {
-          toast.success("회원 정보가 수정되었습니다")
+          toast.success("유저 정보가 수정되었습니다")
           onSuccess?.()
         },
         onError: (error) => {
@@ -54,6 +68,20 @@ export function EditMemberForm({ member, onSuccess }: EditMemberFormProps) {
           required
         />
       </div>
+      {canChangeRole && (
+        <div className="space-y-2">
+          <Label htmlFor="edit-role">권한</Label>
+          <select
+            id="edit-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as UserRole)}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="member">회원</option>
+            <option value="trainer">트레이너</option>
+          </select>
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="edit-phone">전화번호 (선택)</Label>
         <Input
@@ -64,8 +92,8 @@ export function EditMemberForm({ member, onSuccess }: EditMemberFormProps) {
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
         />
       </div>
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "수정 중..." : "수정 완료"}
+      <Button type="submit" className="w-full" disabled={isPending || isRolePending}>
+        {isPending || isRolePending ? "수정 중..." : "수정 완료"}
       </Button>
     </form>
   )

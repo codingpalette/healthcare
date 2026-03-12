@@ -1,8 +1,10 @@
 import { Hono } from "hono"
 import { handle } from "hono/vercel"
 import { createClient } from "@supabase/supabase-js"
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
 import { authMiddleware } from "@/shared/api/hono-auth-middleware"
 import { resolveEmail } from "@/shared/lib/resolve-email"
+import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from "@/shared/api/r2"
 
 const app = new Hono().basePath("/api")
 
@@ -103,12 +105,45 @@ profiles.post("/members", async (c) => {
   return c.json(profile, 201)
 })
 
-// 회원 목록 조회 (트레이너 전용)
+// 유저 목록 조회 (트레이너 전용)
 profiles.get("/members", async (c) => {
   const userRole = c.get("userRole")
   if (userRole !== "trainer") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data, error } = await adminSupabase
+    .from("profiles")
+    .select("*")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+
+  if (error) return c.json({ error: error.message }, 400)
+
+  // auth.users에서 email 조회 후 profiles와 join
+  const { data: authData } = await adminSupabase.auth.admin.listUsers()
+  const emailMap = new Map(
+    (authData?.users ?? []).map((u) => [u.id, u.email ?? null])
+  )
+
+  const merged = (data ?? []).map((row) => ({
+    ...row,
+    email: emailMap.get(row.id) ?? null,
+  }))
+
+  return c.json(merged)
+})
+
+// 본인 프로필 수정
+profiles.patch("/me", async (c) => {
+  const userId = c.get("userId")
+
+  const body = await c.req.json<{ name?: string; phone?: string }>()
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -122,16 +157,86 @@ profiles.get("/members", async (c) => {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
-    .eq("role", "member")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
+    .update(body)
+    .eq("id", userId)
+    .select()
+    .single()
 
   if (error) return c.json({ error: error.message }, 400)
   return c.json(data)
 })
 
-// 프로필 수정
+// 아바타 업로드
+profiles.post("/me/avatar", async (c) => {
+  const userId = c.get("userId")
+
+  const formData = await c.req.formData()
+  const file = formData.get("file")
+
+  if (!file || !(file instanceof File)) {
+    return c.json({ error: "파일이 필요합니다" }, 400)
+  }
+
+  // 이미지 타입 검증
+  if (!file.type.startsWith("image/")) {
+    return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
+  }
+
+  // 5MB 크기 제한
+  if (file.size > 5 * 1024 * 1024) {
+    return c.json({ error: "파일 크기는 5MB 이하여야 합니다" }, 400)
+  }
+
+  const ext = file.name.split(".").pop() ?? "jpg"
+  const key = `avatars/${userId}/${Date.now()}.${ext}`
+
+  // R2에 업로드
+  const arrayBuffer = await file.arrayBuffer()
+  await r2Client.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      Body: new Uint8Array(arrayBuffer),
+      ContentType: file.type,
+    })
+  )
+
+  const avatarUrl = `${R2_PUBLIC_URL}/${key}`
+
+  // 기존 아바타 삭제
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: existing } = await adminSupabase
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", userId)
+    .single()
+
+  if (existing?.avatar_url) {
+    const oldKey = existing.avatar_url.replace(`${R2_PUBLIC_URL}/`, "")
+    try {
+      await r2Client.send(
+        new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: oldKey })
+      )
+    } catch {
+      // 기존 파일 삭제 실패는 무시
+    }
+  }
+
+  // DB 업데이트
+  const { error } = await adminSupabase
+    .from("profiles")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", userId)
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json({ avatarUrl })
+})
+
+// 프로필 수정 (트레이너용)
 profiles.patch("/:id", async (c) => {
   const userId = c.get("userId")
   const targetId = c.req.param("id")
@@ -144,25 +249,6 @@ profiles.patch("/:id", async (c) => {
       return c.json({ error: "본인의 프로필만 수정할 수 있습니다" }, 403)
     }
 
-    // 트레이너는 회원만 수정 가능
-    const supabaseCheck = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
-      {
-        global: {
-          headers: { Authorization: c.req.header("Authorization")! },
-        },
-      }
-    )
-    const { data: targetProfile } = await supabaseCheck
-      .from("profiles")
-      .select("role")
-      .eq("id", targetId)
-      .single()
-
-    if (targetProfile?.role !== "member") {
-      return c.json({ error: "회원만 수정할 수 있습니다" }, 403)
-    }
   }
 
   const body = await c.req.json<{ name?: string; phone?: string }>()
@@ -181,6 +267,38 @@ profiles.patch("/:id", async (c) => {
     .from("profiles")
     .update(body)
     .eq("id", targetId)
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+// 권한 변경 (본인 제외)
+profiles.patch("/:id/role", async (c) => {
+  const userId = c.get("userId")
+  const targetId = c.req.param("id")
+
+  if (userId === targetId) {
+    return c.json({ error: "본인의 권한은 변경할 수 없습니다" }, 403)
+  }
+
+  const body = await c.req.json<{ role?: string }>()
+  if (!body.role || !["member", "trainer"].includes(body.role)) {
+    return c.json({ error: "올바른 권한을 지정해주세요 (member 또는 trainer)" }, 400)
+  }
+
+  // Service Role 키로 Admin 클라이언트 생성 (RLS 우회)
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data, error } = await adminSupabase
+    .from("profiles")
+    .update({ role: body.role })
+    .eq("id", targetId)
+    .is("deleted_at", null)
     .select()
     .single()
 

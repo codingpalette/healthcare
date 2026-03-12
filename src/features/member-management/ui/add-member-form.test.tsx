@@ -102,7 +102,7 @@ describe("AddMemberForm", () => {
 
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalled()
-      expect(toast.success).toHaveBeenCalledWith("회원이 추가되었습니다")
+      expect(toast.success).toHaveBeenCalledWith("유저가 추가되었습니다")
     })
   })
 })

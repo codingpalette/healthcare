@@ -10,6 +10,8 @@ import {
   Wrench,
   Users,
   LogOut,
+  Settings,
+  ChevronsUpDown,
 } from "lucide-react"
 
 import type { Profile } from "@/entities/user"
@@ -27,7 +29,18 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/shared/ui/sidebar"
-import { Avatar, AvatarFallback } from "@/shared/ui"
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/shared/ui"
 
 // 공통 네비게이션 항목
 const commonNav = [
@@ -101,25 +114,71 @@ export function AppSidebar({ profile }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="size-9">
-            <AvatarFallback className="bg-blue-100 text-blue-700 text-sm">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 truncate">
-            <p className="truncate text-sm font-medium">{profile.name}</p>
-            <p className="text-xs text-muted-foreground">{roleLabel}</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="로그아웃"
-          >
-            <LogOut className="size-4" />
-          </button>
-        </div>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<SidebarMenuButton size="lg" />}
+              >
+                <Avatar className="size-8">
+                  {profile.avatarUrl && (
+                    <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+                  )}
+                  <AvatarFallback className="bg-blue-100 text-blue-700 text-sm">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{profile.name}</span>
+                  <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
+                </div>
+                <ChevronsUpDown className="ml-auto size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align="end"
+                sideOffset={4}
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+              >
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="p-0 font-normal">
+                    <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                      <Avatar className="size-8">
+                        {profile.avatarUrl && (
+                          <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+                        )}
+                        <AvatarFallback className="bg-blue-100 text-blue-700 text-sm">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium">{profile.name}</span>
+                        <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() => router.push("/settings")}
+                  >
+                    <Settings className="size-4" />
+                    설정
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="size-4" />
+                    로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
 
       <SidebarRail />

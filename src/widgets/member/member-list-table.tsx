@@ -4,7 +4,7 @@ import { useState } from "react"
 import { MoreHorizontal, Plus, Search } from "lucide-react"
 import { toast } from "sonner"
 import type { Profile } from "@/entities/user"
-import { useMembers, useDeleteMember } from "@/features/member-management"
+import { useMembers, useDeleteMember, useUpdateRole } from "@/features/member-management"
 import {
   Button,
   Input,
@@ -22,29 +22,52 @@ import {
 } from "@/shared/ui"
 
 interface MemberListTableProps {
+  currentUserId: string
   onAdd: () => void
   onEdit: (member: Profile) => void
 }
 
-export function MemberListTable({ onAdd, onEdit }: MemberListTableProps) {
+export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTableProps) {
   const [search, setSearch] = useState("")
+  const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer">("all")
   const { data: members, isLoading } = useMembers()
   const { mutate: deleteMember } = useDeleteMember()
+  const { mutate: changeRole } = useUpdateRole()
 
   const filtered = (members ?? []).filter((m) => {
+    if (roleFilter !== "all" && m.role !== roleFilter) return false
     const q = search.toLowerCase()
     return (
       m.name.toLowerCase().includes(q) ||
+      (m.email?.toLowerCase().includes(q) ?? false) ||
       (m.phone?.toLowerCase().includes(q) ?? false)
     )
   })
 
+  const handleRoleChange = (member: Profile) => {
+    const newRole = member.role === "member" ? "trainer" : "member"
+    const label = newRole === "trainer" ? "트레이너" : "회원"
+    if (!confirm(`${member.name}님의 권한을 ${label}(으)로 변경하시겠습니까?`)) return
+    changeRole(
+      { memberId: member.id, data: { role: newRole } },
+      {
+        onSuccess: () => toast.success(`${member.name}님의 권한이 ${label}(으)로 변경되었습니다`),
+        onError: (err) => toast.error(err.message),
+      }
+    )
+  }
+
   const handleDelete = (member: Profile) => {
-    if (!confirm(`${member.name} 회원을 삭제하시겠습니까?`)) return
+    if (!confirm(`${member.name} 유저를 삭제하시겠습니까?`)) return
     deleteMember(member.id, {
-      onSuccess: () => toast.success("회원이 삭제되었습니다"),
+      onSuccess: () => toast.success("유저가 삭제되었습니다"),
       onError: (err) => toast.error(err.message),
     })
+  }
+
+  const formatEmail = (email: string | null) => {
+    if (!email) return "-"
+    return email.endsWith("@health.app") ? email.replace("@health.app", "") : email
   }
 
   const formatDate = (dateStr: string) =>
@@ -66,15 +89,27 @@ export function MemberListTable({ onAdd, onEdit }: MemberListTableProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="이름 또는 전화번호로 검색"
+            placeholder="이름, 아이디 또는 전화번호로 검색"
             value={search}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
+        <div className="flex gap-1">
+          {([["all", "전체"], ["member", "회원"], ["trainer", "트레이너"]] as const).map(([value, label]) => (
+            <Button
+              key={value}
+              variant={roleFilter === value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setRoleFilter(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
         <Button onClick={onAdd} size="sm">
           <Plus className="mr-1 size-4" />
-          회원 추가
+          유저 추가
         </Button>
       </div>
 
@@ -82,7 +117,7 @@ export function MemberListTable({ onAdd, onEdit }: MemberListTableProps) {
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <p className="text-sm">
             {members?.length === 0
-              ? "등록된 회원이 없습니다"
+              ? "등록된 유저가 없습니다"
               : "검색 결과가 없습니다"}
           </p>
         </div>
@@ -92,6 +127,8 @@ export function MemberListTable({ onAdd, onEdit }: MemberListTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>이름</TableHead>
+                <TableHead>아이디</TableHead>
+                <TableHead>권한</TableHead>
                 <TableHead>전화번호</TableHead>
                 <TableHead>가입일</TableHead>
                 <TableHead className="w-[50px]" />
@@ -105,6 +142,8 @@ export function MemberListTable({ onAdd, onEdit }: MemberListTableProps) {
                   onClick={() => onEdit(member)}
                 >
                   <TableCell className="font-medium">{member.name}</TableCell>
+                  <TableCell>{formatEmail(member.email)}</TableCell>
+                  <TableCell>{member.role === "trainer" ? "트레이너" : "회원"}</TableCell>
                   <TableCell>{member.phone ?? "-"}</TableCell>
                   <TableCell>{formatDate(member.createdAt)}</TableCell>
                   <TableCell>
@@ -130,6 +169,16 @@ export function MemberListTable({ onAdd, onEdit }: MemberListTableProps) {
                         >
                           수정
                         </DropdownMenuItem>
+                        {member.id !== currentUserId && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRoleChange(member)
+                            }}
+                          >
+                            {member.role === "member" ? "트레이너로 변경" : "회원으로 변경"}
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={(e) => {
