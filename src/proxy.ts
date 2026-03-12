@@ -3,7 +3,7 @@ import { createSupabaseMiddlewareClient } from "@/shared/api/supabase-middleware
 
 const PUBLIC_ROUTES = ["/login", "/signup", "/api/health"]
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { supabase, response } = createSupabaseMiddlewareClient(request)
   const { pathname } = request.nextUrl
 

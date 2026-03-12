@@ -64,3 +64,50 @@ export async function softDeleteMember(memberId: string): Promise<void> {
 
   if (error) throw error
 }
+
+export async function createMember(data: import("@/entities/user/model/types").CreateMemberRequest): Promise<Profile> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error("인증되지 않은 사용자입니다")
+
+  const res = await fetch("/api/profiles/members", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "회원 생성에 실패했습니다")
+  }
+
+  const row = await res.json()
+  return toProfile(row)
+}
+
+export async function updateMemberProfile(
+  memberId: string,
+  data: import("@/entities/user/model/types").UpdateMemberRequest
+): Promise<Profile> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error("인증되지 않은 사용자입니다")
+
+  const res = await fetch(`/api/profiles/${memberId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "회원 수정에 실패했습니다")
+  }
+
+  const row = await res.json()
+  return toProfile(row)
+}

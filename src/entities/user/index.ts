@@ -1,2 +1,2 @@
-export { getMyProfile, getMembers, updateProfile, softDeleteMember } from "./api"
-export type { Profile, UserRole } from "./model"
+export { getMyProfile, getMembers, updateProfile, softDeleteMember, createMember, updateMemberProfile } from "./api"
+export type { Profile, UserRole, CreateMemberRequest, UpdateMemberRequest } from "./model"

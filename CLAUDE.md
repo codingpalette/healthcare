@@ -10,6 +10,7 @@
 - **State:** Zustand (클라이언트), TanStack Query (서버)
 - **API:** Hono (Next.js API Route 내장, `/api` basePath)
 - **DB/Auth:** Supabase
+- **Storage:** Cloudflare R2 (이미지, 동영상)
 - **Test:** Vitest + React Testing Library + MSW + Playwright
 
 ## 아키텍처: FSD (Feature-Sliced Design)
@@ -80,6 +81,13 @@ pnpm test:e2e     # Playwright E2E 테스트
 - 코드에서 직접 DB 스키마를 변경하지 않고, 마이그레이션 SQL을 통해서만 관리
 - 마이그레이션은 **멱등성(idempotent)** 을 고려하여 작성 (예: `CREATE TABLE IF NOT EXISTS`)
 - 사용자가 `supabase db push` 또는 `supabase migration up`으로 적용할 수 있도록 작성
+
+### Cloudflare R2 (파일 스토리지)
+- 용도: 이미지, 동영상 등 미디어 파일 저장
+- 클라이언트: `@/shared/api/r2` (AWS S3 호환 API 사용)
+- 환경변수: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `NEXT_PUBLIC_R2_PUBLIC_URL`
+- 업로드는 Hono API 라우트를 통해 서버사이드에서 처리
+- 공개 접근이 필요한 파일은 R2 퍼블릭 URL 또는 커스텀 도메인 사용
 
 ### 테스트 전략
 - `shared` & `entities`: 단위 테스트 (Vitest) - TDD 권장

@@ -45,3 +45,10 @@ next-env.d.ts
 
 # oh-my-claudecode
 .omc/
+
+# agent skills
+.agent/
+.agents/
+.augment/
+skills/
+skills-lock.json

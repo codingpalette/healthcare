@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "@/features/auth/api"
+import { resolveEmail } from "@/shared/lib/resolve-email"
 import { Button } from "@/shared/ui/button"
 
 export function LoginForm() {
@@ -18,7 +19,7 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      await signIn({ email, password })
+      await signIn({ email: resolveEmail(email), password })
       router.push("/")
       router.refresh()
     } catch (err) {
@@ -38,16 +39,16 @@ export function LoginForm() {
 
       <div className="flex flex-col gap-2">
         <label htmlFor="email" className="text-sm font-medium">
-          이메일
+          아이디
         </label>
         <input
           id="email"
-          type="email"
+          type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           className="rounded-md border px-3 py-2"
-          placeholder="이메일을 입력하세요"
+          placeholder="아이디를 입력하세요"
         />
       </div>
 

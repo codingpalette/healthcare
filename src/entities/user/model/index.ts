@@ -1,1 +1,1 @@
-export type { Profile, UserRole } from "./types"
+export type { Profile, UserRole, CreateMemberRequest, UpdateMemberRequest } from "./types"
