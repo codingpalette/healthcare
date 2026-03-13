@@ -1,4 +1,8 @@
 import { Hono } from "hono"
+import {
+  createNotificationIfNeeded,
+  getNotificationPreferencesRow,
+} from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { deletePublicFile, uploadPublicFile } from "@/app/api/_lib/r2-storage"
@@ -118,6 +122,43 @@ workoutRoutes.post("/", async (c) => {
     .single()
 
   if (error) return c.json({ error: error.message }, 400)
+
+  try {
+    const { data: profile } = await adminSupabase
+      .from("profiles")
+      .select("name, trainer_id, role")
+      .eq("id", userId)
+      .maybeSingle<{ name: string | null; trainer_id: string | null; role: string | null }>()
+
+    if (profile?.role === "member" && profile.trainer_id) {
+      const trainerPreferences = await getNotificationPreferencesRow(adminSupabase, profile.trainer_id)
+
+      await createNotificationIfNeeded(
+        adminSupabase,
+        {
+          recipientId: profile.trainer_id,
+          actorId: userId,
+          kind: "system",
+          title: `${profile.name ?? "회원"}님이 운동 인증을 등록했습니다`,
+          message:
+            typeof data?.notes === "string" && data.notes.trim().length > 0
+              ? data.notes.trim()
+              : `${String(data?.exercise_name ?? exerciseName).trim()} 운동이 새로 등록되었습니다.`,
+          link: "/workout",
+          metadata: {
+            workoutId: data?.id,
+            exerciseName: data?.exercise_name ?? exerciseName,
+            source: "workout_recorded",
+          },
+          dedupeKey: `workout_recorded:${String(data?.id ?? "")}`,
+        },
+        Boolean(trainerPreferences.push_enabled)
+      )
+    }
+  } catch (notificationError) {
+    console.error("workout notification create failed", notificationError)
+  }
+
   return c.json(data, 201)
 })
 
@@ -311,6 +352,27 @@ workoutRoutes.patch("/:id/feedback", async (c) => {
     .single()
 
   if (error) return c.json({ error: error.message }, 400)
+
+  if (data?.user_id && body.trainerFeedback?.trim()) {
+    const preferences = await getNotificationPreferencesRow(adminSupabase, data.user_id as string)
+
+    if (preferences.feedback_enabled) {
+      await createNotificationIfNeeded(
+        adminSupabase,
+        {
+          recipientId: data.user_id as string,
+          kind: "workout_feedback",
+          title: "운동 피드백이 도착했습니다",
+          message: body.trainerFeedback.trim(),
+          link: "/workout",
+          metadata: { workoutId },
+          dedupeKey: `workout_feedback:${workoutId}:${String(data.updated_at)}`,
+        },
+        Boolean(preferences.push_enabled)
+      )
+    }
+  }
+
   return c.json(data)
 })
 

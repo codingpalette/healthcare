@@ -1,0 +1,378 @@
+import { Hono } from "hono"
+import { createAdminSupabase } from "@/app/api/_lib/supabase"
+import { createNotificationIfNeeded, getNotificationPreferencesRow } from "@/app/api/_lib/notifications"
+import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
+import {
+  formatKstDate,
+  getCurrentMonthKey,
+  isThreeDayAbsence,
+  shouldCreateInbodyReminder,
+} from "@/entities/notification/model/logic"
+
+export const notificationsRoutes = new Hono<AuthEnv>().use(authMiddleware)
+
+async function syncMemberInbodyNotifications(
+  adminSupabase: ReturnType<typeof createAdminSupabase>,
+  userId: string,
+  pushEnabled: boolean
+) {
+  const monthKey = getCurrentMonthKey()
+  const monthStart = `${monthKey}-01`
+  const monthEnd = `${monthKey}-31`
+
+  const { data: reminder } = await adminSupabase
+    .from("inbody_reminder_settings")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  if (!reminder || !reminder.enabled) return
+
+  const { data: records } = await adminSupabase
+    .from("inbody_records")
+    .select("id")
+    .eq("user_id", userId)
+    .gte("measured_date", monthStart)
+    .lte("measured_date", monthEnd)
+    .limit(1)
+
+  const shouldNotify = shouldCreateInbodyReminder({
+    measurementDay: Number(reminder.measurement_day),
+    enabled: Boolean(reminder.enabled),
+    hasRecordThisMonth: Boolean(records?.length),
+  })
+
+  if (!shouldNotify) return
+
+  await createNotificationIfNeeded(
+    adminSupabase,
+    {
+      recipientId: userId,
+      kind: "inbody_reminder",
+      title: "이번 달 인바디 측정일이 지났습니다",
+      message: `이번 달 ${reminder.measurement_day}일 측정 알림이 도래했습니다. 인바디를 기록해 주세요.`,
+      link: "/inbody",
+      metadata: {
+        measurementDay: reminder.measurement_day,
+        monthKey,
+      },
+      dedupeKey: `inbody_reminder:member:${userId}:${monthKey}`,
+    },
+    pushEnabled
+  )
+}
+
+async function syncTrainerNotifications(
+  adminSupabase: ReturnType<typeof createAdminSupabase>,
+  trainerId: string,
+  options: { inbodyEnabled: boolean; attendanceEnabled: boolean; pushEnabled: boolean }
+) {
+  const { data: members } = await adminSupabase
+    .from("profiles")
+    .select("id, name")
+    .eq("trainer_id", trainerId)
+    .eq("role", "member")
+    .is("deleted_at", null)
+
+  if (!members?.length) return
+
+  const memberIds = members.map((member) => member.id as string)
+  const memberNameMap = new Map(members.map((member) => [member.id as string, member.name as string]))
+
+  if (options.attendanceEnabled) {
+    const today = new Date()
+    const attendanceStart = new Date(today)
+    attendanceStart.setDate(today.getDate() - 3)
+    attendanceStart.setHours(0, 0, 0, 0)
+    const attendanceEnd = new Date(today)
+    attendanceEnd.setDate(today.getDate() - 1)
+    attendanceEnd.setHours(23, 59, 59, 999)
+
+    const { data: attendanceRows } = await adminSupabase
+      .from("attendance")
+      .select("user_id, check_in_at")
+      .in("user_id", memberIds)
+      .gte("check_in_at", attendanceStart.toISOString())
+      .lte("check_in_at", attendanceEnd.toISOString())
+
+    const attendanceMap = new Map<string, Set<string>>()
+
+    for (const row of attendanceRows ?? []) {
+      const userId = row.user_id as string
+      const current = attendanceMap.get(userId) ?? new Set<string>()
+      current.add(formatKstDate(new Date(row.check_in_at as string)))
+      attendanceMap.set(userId, current)
+    }
+
+    const todayKey = formatKstDate(today)
+    for (const memberId of memberIds) {
+      const isAbsent = isThreeDayAbsence(attendanceMap.get(memberId) ?? new Set<string>(), today)
+      if (!isAbsent) continue
+
+      await createNotificationIfNeeded(
+        adminSupabase,
+        {
+          recipientId: trainerId,
+          actorId: memberId,
+          kind: "attendance_absence",
+          title: `${memberNameMap.get(memberId) ?? "회원"}님이 3일 연속 결석 중입니다`,
+          message: "최근 3일 연속 출석 기록이 없습니다. 출석 현황을 확인해 주세요.",
+          link: "/attendance",
+          metadata: {
+            memberId,
+            date: todayKey,
+          },
+          dedupeKey: `attendance_absence:${memberId}:${todayKey}`,
+        },
+        options.pushEnabled
+      )
+    }
+  }
+
+  if (options.inbodyEnabled) {
+    const monthKey = getCurrentMonthKey()
+    const monthStart = `${monthKey}-01`
+    const monthEnd = `${monthKey}-31`
+
+    const { data: reminders } = await adminSupabase
+      .from("inbody_reminder_settings")
+      .select("*")
+      .eq("trainer_id", trainerId)
+      .in("user_id", memberIds)
+      .eq("enabled", true)
+
+    if (!reminders?.length) return
+
+    const reminderMemberIds = reminders.map((row) => row.user_id as string)
+    const { data: monthRecords } = await adminSupabase
+      .from("inbody_records")
+      .select("user_id, measured_date")
+      .in("user_id", reminderMemberIds)
+      .gte("measured_date", monthStart)
+      .lte("measured_date", monthEnd)
+
+    const recordedMemberIds = new Set((monthRecords ?? []).map((row) => row.user_id as string))
+
+    for (const reminder of reminders) {
+      const memberId = reminder.user_id as string
+      const shouldNotify = shouldCreateInbodyReminder({
+        measurementDay: Number(reminder.measurement_day),
+        enabled: Boolean(reminder.enabled),
+        hasRecordThisMonth: recordedMemberIds.has(memberId),
+      })
+
+      if (!shouldNotify) continue
+
+      await createNotificationIfNeeded(
+        adminSupabase,
+        {
+          recipientId: trainerId,
+          actorId: memberId,
+          kind: "inbody_reminder",
+          title: `${memberNameMap.get(memberId) ?? "회원"}님의 인바디 측정일이 지났습니다`,
+          message: `이번 달 ${reminder.measurement_day}일 기준 인바디 기록이 아직 없습니다.`,
+          link: "/inbody",
+          metadata: {
+            memberId,
+            measurementDay: reminder.measurement_day,
+            monthKey,
+          },
+          dedupeKey: `inbody_reminder:trainer:${memberId}:${monthKey}`,
+        },
+        options.pushEnabled
+      )
+    }
+  }
+}
+
+notificationsRoutes.post("/sync", async (c) => {
+  const userId = c.get("userId")
+  const userRole = c.get("userRole")
+  const adminSupabase = createAdminSupabase()
+
+  try {
+    const preferences = await getNotificationPreferencesRow(adminSupabase, userId)
+
+    if (preferences.inbody_enabled) {
+      await syncMemberInbodyNotifications(adminSupabase, userId, Boolean(preferences.push_enabled))
+    }
+
+    if (userRole === "trainer") {
+      await syncTrainerNotifications(adminSupabase, userId, {
+        inbodyEnabled: Boolean(preferences.inbody_enabled),
+        attendanceEnabled: Boolean(preferences.attendance_enabled),
+        pushEnabled: Boolean(preferences.push_enabled),
+      })
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    return c.json(
+      { error: error instanceof Error ? error.message : "알림 동기화에 실패했습니다" },
+      400
+    )
+  }
+})
+
+notificationsRoutes.get("/", async (c) => {
+  const userId = c.get("userId")
+  const adminSupabase = createAdminSupabase()
+  const limit = Number(c.req.query("limit") ?? "20")
+  const unreadOnly = c.req.query("unreadOnly") === "true"
+
+  let query = adminSupabase
+    .from("notifications")
+    .select("*")
+    .eq("recipient_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (unreadOnly) {
+    query = query.is("read_at", null)
+  }
+
+  const { data, error } = await query
+  if (error) return c.json({ error: error.message }, 400)
+
+  const { count } = await adminSupabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", userId)
+    .is("read_at", null)
+
+  return c.json({
+    notifications: data ?? [],
+    unreadCount: count ?? 0,
+  })
+})
+
+notificationsRoutes.patch("/read-all", async (c) => {
+  const userId = c.get("userId")
+  const adminSupabase = createAdminSupabase()
+  const { error } = await adminSupabase
+    .from("notifications")
+    .update({
+      read_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("recipient_id", userId)
+    .is("read_at", null)
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json({ success: true })
+})
+
+notificationsRoutes.patch("/:id/read", async (c) => {
+  const userId = c.get("userId")
+  const notificationId = c.req.param("id")
+  const adminSupabase = createAdminSupabase()
+  const { data, error } = await adminSupabase
+    .from("notifications")
+    .update({
+      read_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", notificationId)
+    .eq("recipient_id", userId)
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+notificationsRoutes.get("/preferences/me", async (c) => {
+  const userId = c.get("userId")
+  const adminSupabase = createAdminSupabase()
+
+  try {
+    const preferences = await getNotificationPreferencesRow(adminSupabase, userId)
+    return c.json(preferences)
+  } catch (error) {
+    return c.json(
+      { error: error instanceof Error ? error.message : "알림 설정 조회에 실패했습니다" },
+      400
+    )
+  }
+})
+
+notificationsRoutes.put("/preferences/me", async (c) => {
+  const userId = c.get("userId")
+  const adminSupabase = createAdminSupabase()
+  const body = await c.req.json<{
+    inbodyEnabled?: boolean
+    attendanceEnabled?: boolean
+    chatEnabled?: boolean
+    feedbackEnabled?: boolean
+    pushEnabled?: boolean
+  }>()
+
+  const { data, error } = await adminSupabase
+    .from("notification_preferences")
+    .upsert(
+      {
+        user_id: userId,
+        inbody_enabled: body.inbodyEnabled ?? true,
+        attendance_enabled: body.attendanceEnabled ?? true,
+        chat_enabled: body.chatEnabled ?? true,
+        feedback_enabled: body.feedbackEnabled ?? true,
+        push_enabled: body.pushEnabled ?? false,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    )
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})
+
+notificationsRoutes.post("/push-subscriptions", async (c) => {
+  const userId = c.get("userId")
+  const adminSupabase = createAdminSupabase()
+  const body = await c.req.json<{
+    endpoint?: string
+    keys?: { p256dh?: string; auth?: string }
+  }>()
+
+  if (!body.endpoint || !body.keys?.p256dh || !body.keys.auth) {
+    return c.json({ error: "푸시 구독 정보가 올바르지 않습니다" }, 400)
+  }
+
+  const { error } = await adminSupabase
+    .from("push_subscriptions")
+    .upsert(
+      {
+        user_id: userId,
+        endpoint: body.endpoint,
+        p256dh: body.keys.p256dh,
+        auth: body.keys.auth,
+        user_agent: c.req.header("User-Agent") ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "endpoint" }
+    )
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json({ success: true })
+})
+
+notificationsRoutes.delete("/push-subscriptions", async (c) => {
+  const userId = c.get("userId")
+  const adminSupabase = createAdminSupabase()
+  const body = await c.req.json<{ endpoint?: string }>()
+
+  if (!body.endpoint) {
+    return c.json({ error: "삭제할 구독 endpoint가 필요합니다" }, 400)
+  }
+
+  const { error } = await adminSupabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("user_id", userId)
+    .eq("endpoint", body.endpoint)
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json({ success: true })
+})

@@ -103,11 +103,11 @@
 - [ ] 익명 건의 옵션
 
 ## 알림 시스템
-- [ ] 알림 엔티티 DB 마이그레이션 (notifications 테이블)
-- [ ] 푸시 알림 연동 (Web Push API)
-- [ ] SMS 알림 연동 (결석 알림, 인바디 알림)
-- [ ] 알림 설정 UI (알림 종류별 on/off)
-- [ ] 알림 목록 페이지 (읽음/안읽음)
+- [x] 알림 엔티티 DB 마이그레이션 (notifications 테이블)
+- [x] 푸시 알림 연동 (Web Push API)
+- [ ] SMS 알림 연동 (결석 알림, 인바디 알림) - 후순위, 추후 진행
+- [x] 알림 설정 UI (알림 종류별 on/off)
+- [x] 알림 목록 페이지 (읽음/안읽음)
 
 ## 트레이너 전용
 - [x] 회원 관리 페이지 (담당 회원 목록)
@@ -125,7 +125,7 @@
 - [ ] 앱 아이콘 생성 (192x192, 512x512)
 - [ ] Service Worker 설정 (오프라인 캐싱 전략)
 - [ ] 오프라인 fallback 페이지
-- [ ] 푸시 알림 연동 (Supabase + Web Push API)
+- [x] 푸시 알림 연동 (Supabase + Web Push API)
 - [ ] 설치 유도 배너 (A2HS prompt)
 - [ ] 스플래시 스크린 설정 (iOS/Android)
 - [ ] iOS meta 태그 추가 (apple-mobile-web-app-capable 등)

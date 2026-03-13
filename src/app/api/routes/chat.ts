@@ -1,4 +1,8 @@
 import { Hono } from "hono"
+import {
+  createNotificationIfNeeded,
+  getNotificationPreferencesRow,
+} from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
@@ -39,10 +43,6 @@ export const chatRoutes = new Hono<AuthEnv>().use(authMiddleware)
 
 function getRoomReadField(userRole: "member" | "trainer") {
   return userRole === "trainer" ? "trainer_last_read_at" : "member_last_read_at"
-}
-
-function getCounterpartReadField(userRole: "member" | "trainer") {
-  return userRole === "trainer" ? "member_last_read_at" : "trainer_last_read_at"
 }
 
 function buildMessagePreview(
@@ -594,6 +594,40 @@ chatRoutes.post("/rooms/:id/messages", async (c) => {
     .eq("id", roomId)
 
   await refreshRoomMetadata(roomId, adminSupabase)
+
+  const recipientId = userId === room.member_id ? room.trainer_id : room.member_id
+  const recipientPreferences = await getNotificationPreferencesRow(adminSupabase, recipientId)
+
+  if (recipientPreferences.chat_enabled) {
+    const senderProfile = (data as Record<string, unknown>).sender as Record<string, unknown> | null
+    const messagePreview =
+      body.type === "text"
+        ? body.content?.trim() ?? ""
+        : body.type === "feedback"
+          ? "새 피드백 메시지가 도착했습니다."
+          : body.type === "meal_share"
+            ? "식단 인증을 공유했습니다."
+            : "운동 인증을 공유했습니다."
+
+    await createNotificationIfNeeded(
+      adminSupabase,
+      {
+        recipientId,
+        actorId: userId,
+        kind: "chat_message",
+        title: `${senderProfile?.name ?? "상대방"}님의 새 관리톡 메시지`,
+        message: messagePreview,
+        link: "/chat",
+        metadata: {
+          roomId,
+          messageId: (data as Record<string, unknown>).id,
+          messageType: body.type,
+        },
+        dedupeKey: `chat_message:${String((data as Record<string, unknown>).id)}`,
+      },
+      Boolean(recipientPreferences.push_enabled)
+    )
+  }
 
   const sender = (data as Record<string, unknown>).sender as Record<string, unknown> | null
   return c.json({

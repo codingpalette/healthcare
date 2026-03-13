@@ -1,10 +1,9 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { Bell } from "lucide-react"
 
 import { SidebarTrigger } from "@/shared/ui/sidebar"
-import { Button } from "@/shared/ui"
+import { NotificationBell } from "@/widgets/layout/notification-bell"
 
 // 경로별 페이지 제목 매핑
 const pageTitles: Record<string, string> = {
@@ -12,6 +11,8 @@ const pageTitles: Record<string, string> = {
   "/chat": "1:1 관리톡",
   "/diet": "식단 관리",
   "/workout": "운동 관리",
+  "/inbody": "인바디 관리",
+  "/notifications": "알림",
   "/qna": "Q&A",
   "/equipment": "기구 가이드",
 }
@@ -26,9 +27,7 @@ export function AppHeader() {
       <div className="mx-1 h-4 w-px shrink-0 bg-border" />
       <h1 className="text-base font-semibold">{title}</h1>
       <div className="ml-auto">
-        <Button variant="ghost" size="icon" className="size-9">
-          <Bell className="size-4" />
-        </Button>
+        <NotificationBell />
       </div>
     </header>
   )
