@@ -11,6 +11,7 @@ import {
   Wrench,
   Users,
   CalendarCheck,
+  Scale,
   LogOut,
   Settings,
   ChevronsUpDown,
@@ -48,6 +49,7 @@ import {
 const commonNav = [
   { title: "대시보드", href: "/", icon: LayoutDashboard },
   { title: "출석", href: "/attendance", icon: CalendarCheck },
+  { title: "인바디", href: "/inbody", icon: Scale },
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
   { title: "Q&A", href: "/qna", icon: MessageCircle },
   { title: "기구 가이드", href: "/equipment", icon: Wrench },
