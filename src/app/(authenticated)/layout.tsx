@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { createSupabaseServerClient } from "@/shared/api/supabase-server"
 import type { Profile } from "@/entities/user"
 import { SidebarInset, SidebarProvider } from "@/shared/ui/sidebar"
-import { AppSidebar, AppHeader } from "@/widgets/layout"
+import { AppSidebar, AppHeader, MobileBottomNav } from "@/widgets/layout"
 
 export default async function AuthenticatedLayout({
   children,
@@ -69,8 +69,9 @@ export default async function AuthenticatedLayout({
       <AppSidebar profile={profile} />
       <SidebarInset>
         <AppHeader />
-        <main className="flex-1 overflow-auto bg-primary/5 p-6 md:p-8">{children}</main>
+        <main className="flex-1 overflow-auto bg-primary/5 px-4 py-5 pb-28 md:p-8 md:pb-8">{children}</main>
       </SidebarInset>
+      <MobileBottomNav profile={profile} />
     </SidebarProvider>
   )
 }

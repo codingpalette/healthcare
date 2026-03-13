@@ -3,15 +3,6 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  LayoutDashboard,
-  MessagesSquare,
-  UtensilsCrossed,
-  Dumbbell,
-  MessageCircle,
-  Wrench,
-  Users,
-  CalendarCheck,
-  Scale,
   LogOut,
   Settings,
   ChevronsUpDown,
@@ -44,29 +35,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/shared/ui"
-
-// 공통 네비게이션 항목
-const commonNav = [
-  { title: "대시보드", href: "/", icon: LayoutDashboard },
-  { title: "출석", href: "/attendance", icon: CalendarCheck },
-  { title: "인바디", href: "/inbody", icon: Scale },
-  { title: "관리톡", href: "/chat", icon: MessagesSquare },
-  { title: "Q&A", href: "/qna", icon: MessageCircle },
-  { title: "기구 가이드", href: "/equipment", icon: Wrench },
-]
-
-// 트레이너 전용 네비게이션
-const trainerNav = [
-  { title: "식단", href: "/diet", icon: UtensilsCrossed },
-  { title: "운동", href: "/workout", icon: Dumbbell },
-  { title: "회원 관리", href: "/members", icon: Users },
-]
-
-// 회원 전용 네비게이션
-const memberNav = [
-  { title: "식단", href: "/diet", icon: UtensilsCrossed },
-  { title: "운동", href: "/workout", icon: Dumbbell },
-]
+import { getSidebarNavItems, isNavItemActive } from "@/widgets/layout/navigation"
 
 interface AppSidebarProps {
   profile: Profile
@@ -80,10 +49,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
   const initials = profile.name.slice(0, 1)
 
   // 역할에 따른 네비게이션 메뉴 구성
-  const navItems =
-    profile.role === "member"
-      ? [...commonNav, ...memberNav]
-      : [...commonNav, ...trainerNav]
+  const navItems = getSidebarNavItems(profile.role)
 
   const handleLogout = async () => {
     await signOut()
@@ -117,7 +83,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
-                    isActive={pathname === item.href}
+                    isActive={isNavItemActive(pathname, item.href)}
                   >
                     <item.icon />
                     <span>{item.title}</span>
