@@ -286,7 +286,7 @@ function ShareDialog({
           id: meal.id,
           title: `${meal.mealType === "breakfast" ? "아침" : meal.mealType === "lunch" ? "점심" : meal.mealType === "dinner" ? "저녁" : "간식"} 식단`,
           description: meal.description ?? "식단 메모 없음",
-          mediaUrl: meal.photoUrl,
+          mediaUrl: meal.photoUrls[0] ?? null,
           mediaType: null,
           chips: [
             meal.calories != null ? `${meal.calories}kcal` : null,
@@ -300,8 +300,8 @@ function ShareDialog({
           id: workout.id,
           title: workout.exerciseName,
           description: workout.notes ?? "운동일지 없음",
-          mediaUrl: workout.mediaUrl,
-          mediaType: workout.mediaType,
+          mediaUrl: workout.mediaUrls[0] ?? null,
+          mediaType: null,
           chips: [
             workout.sets != null ? `${workout.sets}세트` : null,
             workout.reps != null ? `${workout.reps}회` : null,

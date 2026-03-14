@@ -7,4 +7,4 @@ export {
   updateWorkout,
   updateWorkoutFeedback,
 } from "./api"
-export type { Workout, WorkoutInput, WorkoutMediaType, WorkoutWithProfile } from "./model"
+export type { Workout, WorkoutInput, WorkoutWithProfile } from "./model"

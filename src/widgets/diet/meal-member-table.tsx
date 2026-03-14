@@ -159,9 +159,9 @@ function MealDetailDialog({
           <div className="flex flex-col gap-5">
             <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
               <div className="overflow-hidden rounded-xl bg-muted">
-                {meal.photoUrl ? (
+                {meal.photoUrls.length > 0 ? (
                   <Image
-                    src={meal.photoUrl}
+                    src={meal.photoUrls[0]}
                     alt={`${meal.userName} 식단 사진`}
                     width={720}
                     height={540}
@@ -281,9 +281,9 @@ function MealDetailDialog({
                       key={memberMeal.id}
                       className="flex items-start gap-3 rounded-xl bg-muted/40 p-3"
                     >
-                      {memberMeal.photoUrl ? (
+                      {memberMeal.photoUrls.length > 0 ? (
                         <Image
-                          src={memberMeal.photoUrl}
+                          src={memberMeal.photoUrls[0]}
                           alt={`${meal.userName} 식단 썸네일`}
                           width={72}
                           height={72}

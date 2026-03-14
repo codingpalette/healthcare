@@ -129,9 +129,9 @@ export function InbodyRecordList() {
               {records.map((record) => (
                 <div key={record.id} className="rounded-2xl border bg-card p-4">
                   <div className="flex flex-col gap-4 md:flex-row">
-                    {record.photoUrl ? (
+                    {record.photoUrls[0] ? (
                       <Image
-                        src={record.photoUrl}
+                        src={record.photoUrls[0]}
                         alt="인바디 기록 사진"
                         width={180}
                         height={180}

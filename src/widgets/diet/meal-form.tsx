@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
-import { CalendarIcon, Camera, X } from "lucide-react"
+import { CalendarIcon, Camera, Plus, X } from "lucide-react"
 import { toast } from "sonner"
 import type { Meal, MealInput, MealType } from "@/entities/meal"
 import { useCreateMeal, useUpdateMeal } from "@/features/diet"
@@ -31,6 +31,8 @@ const MEAL_TYPES: { value: MealType; label: string }[] = [
   { value: "dinner", label: "저녁" },
   { value: "snack", label: "간식" },
 ]
+
+const MAX_IMAGES = 5
 
 interface MealFormProps {
   open: boolean
@@ -65,12 +67,6 @@ function formatDateLabel(value: string) {
   })
 }
 
-function revokePreviewUrl(url: string | null) {
-  if (url?.startsWith("blob:")) {
-    URL.revokeObjectURL(url)
-  }
-}
-
 export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealFormProps) {
   const createMeal = useCreateMeal()
   const updateMeal = useUpdateMeal()
@@ -85,34 +81,48 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
   const [fat, setFat] = useState(editMeal?.fat?.toString() ?? "")
   const [date, setDate] = useState(editMeal?.date ?? defaultDate ?? formatDateValue(new Date()))
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
-  const [photo, setPhoto] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(editMeal?.photoUrl ?? null)
+  const [photos, setPhotos] = useState<File[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>(editMeal?.photoUrls ?? [])
 
   const isSubmitting = createMeal.isPending || updateMeal.isPending
   const selectedDate = parseDateValue(date)
 
   useEffect(() => {
+    // 컴포넌트 언마운트 시 blob URL 해제
     return () => {
-      revokePreviewUrl(photoPreview)
+      photoPreviews.forEach((url) => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url)
+        }
+      })
     }
-  }, [photoPreview])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
 
-    if (!file.type.startsWith("image/")) {
+    const currentCount = photoPreviews.length
+    if (currentCount + files.length > MAX_IMAGES) {
+      toast.error(`최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다`)
+      e.target.value = ""
+      return
+    }
+
+    const invalidFile = files.find((f) => !f.type.startsWith("image/"))
+    if (invalidFile) {
       toast.error("이미지 파일만 업로드할 수 있습니다")
       e.target.value = ""
       return
     }
 
     try {
-      const compressedPhoto = await compressImageToWebP(file)
+      const compressed = await Promise.all(files.map((f) => compressImageToWebP(f)))
+      const newPreviews = compressed.map((f) => URL.createObjectURL(f))
 
-      revokePreviewUrl(photoPreview)
-      setPhoto(compressedPhoto)
-      setPhotoPreview(URL.createObjectURL(compressedPhoto))
+      setPhotos((prev) => [...prev, ...compressed])
+      setPhotoPreviews((prev) => [...prev, ...newPreviews])
       e.target.value = ""
     } catch {
       toast.error("사진 압축에 실패했습니다")
@@ -120,10 +130,24 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
     }
   }
 
-  function removePhoto() {
-    revokePreviewUrl(photoPreview)
-    setPhoto(null)
-    setPhotoPreview(editMeal?.photoUrl ?? null)
+  function removePhoto(index: number) {
+    const url = photoPreviews[index]
+    if (url?.startsWith("blob:")) {
+      URL.revokeObjectURL(url)
+    }
+
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index))
+
+    // blob URL인 경우에만 photos 배열에서 제거 (기존 URL은 photos에 없음)
+    if (url?.startsWith("blob:")) {
+      // photos 배열에서 해당 blob URL에 대응하는 파일 제거
+      // blob URL 순서대로 photos에 매핑됨
+      const existingUrlCount = photoPreviews.filter((p, i) => i < index && !p.startsWith("blob:")).length
+      const blobIndexBefore = photoPreviews.filter((p, i) => i < index && p.startsWith("blob:")).length
+      setPhotos((prev) => prev.filter((_, i) => i !== blobIndexBefore))
+      void existingUrlCount // suppress unused warning
+    }
+
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
@@ -141,13 +165,22 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
     }
 
     if (editMeal) {
-      await updateMeal.mutateAsync({ id: editMeal.id, input, photo: photo ?? undefined })
+      const existingPhotoUrls = photoPreviews.filter((url) => !url.startsWith("blob:"))
+      await updateMeal.mutateAsync({
+        id: editMeal.id,
+        input,
+        photos: photos.length ? photos : undefined,
+        existingPhotoUrls,
+      })
     } else {
-      await createMeal.mutateAsync({ input, photo: photo ?? undefined })
+      await createMeal.mutateAsync({ input, photos: photos.length ? photos : undefined })
     }
 
     onOpenChange(false)
   }
+
+  const totalCount = photoPreviews.length
+  const canAddMore = totalCount < MAX_IMAGES
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -278,26 +311,17 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
 
           {/* 사진 업로드 */}
           <div className="space-y-2">
-            <Label>사진</Label>
-            {photoPreview ? (
-              <div className="relative h-40 w-full overflow-hidden rounded-lg">
-                <Image
-                  fill
-                  src={photoPreview}
-                  alt="식단 사진 미리보기"
-                  className="object-cover"
-                  sizes="(max-width: 640px) 100vw, 448px"
-                  unoptimized
-                />
-                <button
-                  type="button"
-                  onClick={removePhoto}
-                  className="absolute top-2 right-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
-                >
-                  <X className="size-4" />
-                </button>
-              </div>
-            ) : (
+            <div className="flex items-center justify-between">
+              <Label>사진</Label>
+              {totalCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {totalCount}/{MAX_IMAGES}
+                </span>
+              )}
+            </div>
+
+            {totalCount === 0 ? (
+              // 빈 상태: 카메라 업로드 영역 표시
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -309,11 +333,50 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
                   <span className="text-[11px]">업로드 전 WebP로 압축됩니다</span>
                 </div>
               </button>
+            ) : (
+              // 사진 그리드
+              <div className="grid grid-cols-3 gap-2">
+                {photoPreviews.map((preview, index) => (
+                  <div key={preview} className="relative aspect-square overflow-hidden rounded-lg">
+                    <Image
+                      fill
+                      src={preview}
+                      alt={`식단 사진 ${index + 1}`}
+                      className="object-cover"
+                      sizes="(max-width: 640px) 33vw, 148px"
+                      unoptimized
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-1 right-1 rounded-full bg-black/50 p-0.5 text-white hover:bg-black/70"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* 추가 버튼 */}
+                {canAddMore && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50"
+                  >
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                      <Plus className="size-5" />
+                      <span className="text-[11px]">추가</span>
+                    </div>
+                  </button>
+                )}
+              </div>
             )}
+
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={handlePhotoChange}
             />

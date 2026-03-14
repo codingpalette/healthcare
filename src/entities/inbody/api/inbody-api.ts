@@ -19,7 +19,7 @@ function toInbodyRecord(row: Record<string, unknown>): InbodyRecord {
     bodyMassIndex: row.body_mass_index != null ? Number(row.body_mass_index) : null,
     bodyFatMass: row.body_fat_mass != null ? Number(row.body_fat_mass) : null,
     memo: (row.memo as string) ?? null,
-    photoUrl: (row.photo_url as string) ?? null,
+    photoUrls: (row.photo_urls as string[]) ?? [],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }
@@ -61,13 +61,13 @@ async function getAccessToken() {
   return session.access_token
 }
 
-export async function createInbodyRecord(input: InbodyInput, photo?: File): Promise<InbodyRecord> {
+export async function createInbodyRecord(input: InbodyInput, photos?: File[]): Promise<InbodyRecord> {
   const accessToken = await getAccessToken()
   let res: Response
 
-  if (photo) {
+  if (photos?.length) {
     const formData = new FormData()
-    formData.append("file", photo)
+    for (const file of photos) formData.append("files", file)
     if (input.measuredDate) formData.append("measuredDate", input.measuredDate)
     if (input.weight != null) formData.append("weight", String(input.weight))
     if (input.skeletalMuscleMass != null) {
@@ -162,16 +162,22 @@ export async function getTrainerInbodyOverview() {
 export async function updateInbodyRecord(
   id: string,
   input: Partial<InbodyInput>,
-  photo?: File,
-  removePhoto?: boolean
+  photos?: File[],
+  existingPhotoUrls?: string[]
 ): Promise<InbodyRecord> {
   const accessToken = await getAccessToken()
+  const hasFiles = photos && photos.length > 0
+
   let res: Response
 
-  if (photo) {
+  if (hasFiles || existingPhotoUrls) {
     const formData = new FormData()
-    formData.append("file", photo)
-    if (removePhoto) formData.append("removePhoto", "true")
+    if (photos) {
+      for (const file of photos) formData.append("files", file)
+    }
+    if (existingPhotoUrls) {
+      formData.append("existingUrls", JSON.stringify(existingPhotoUrls))
+    }
     if (input.measuredDate) formData.append("measuredDate", input.measuredDate)
     if (input.weight !== undefined) formData.append("weight", input.weight === null ? "" : String(input.weight))
     if (input.skeletalMuscleMass !== undefined) {
@@ -206,7 +212,7 @@ export async function updateInbodyRecord(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ ...input, removePhoto }),
+      body: JSON.stringify(input),
     })
   }
 

@@ -12,8 +12,7 @@ function toWorkout(row: Record<string, unknown>): Workout {
     durationMinutes: (row.duration_minutes as number) ?? null,
     caloriesBurned: (row.calories_burned as number) ?? null,
     notes: (row.notes as string) ?? null,
-    mediaUrl: (row.media_url as string) ?? null,
-    mediaType: (row.media_type as Workout["mediaType"]) ?? null,
+    mediaUrls: (row.media_urls as string[]) ?? [],
     trainerFeedback: (row.trainer_feedback as string) ?? null,
     date: row.date as string,
     createdAt: row.created_at as string,
@@ -34,13 +33,13 @@ async function getAccessToken() {
   return session.access_token
 }
 
-export async function createWorkout(input: WorkoutInput, media?: File): Promise<Workout> {
+export async function createWorkout(input: WorkoutInput, photos?: File[]): Promise<Workout> {
   const accessToken = await getAccessToken()
   let res: Response
 
-  if (media) {
+  if (photos?.length) {
     const formData = new FormData()
-    formData.append("file", media)
+    for (const file of photos) formData.append("files", file)
     formData.append("exerciseName", input.exerciseName)
     if (input.sets != null) formData.append("sets", String(input.sets))
     if (input.reps != null) formData.append("reps", String(input.reps))
@@ -148,16 +147,21 @@ export async function getMemberWorkouts(
 export async function updateWorkout(
   id: string,
   input: Partial<WorkoutInput>,
-  media?: File,
-  removeMedia?: boolean
+  photos?: File[],
+  existingMediaUrls?: string[]
 ): Promise<Workout> {
   const accessToken = await getAccessToken()
+  const hasFiles = photos && photos.length > 0
   let res: Response
 
-  if (media) {
+  if (hasFiles || existingMediaUrls) {
     const formData = new FormData()
-    formData.append("file", media)
-    if (removeMedia) formData.append("removeMedia", "true")
+    if (photos) {
+      for (const file of photos) formData.append("files", file)
+    }
+    if (existingMediaUrls) {
+      formData.append("existingUrls", JSON.stringify(existingMediaUrls))
+    }
     if (input.exerciseName) formData.append("exerciseName", input.exerciseName)
     if (input.sets !== undefined) formData.append("sets", input.sets === null ? "" : String(input.sets))
     if (input.reps !== undefined) formData.append("reps", input.reps === null ? "" : String(input.reps))
@@ -185,10 +189,7 @@ export async function updateWorkout(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        ...input,
-        removeMedia,
-      }),
+      body: JSON.stringify(input),
     })
   }
 

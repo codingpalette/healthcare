@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
-import { CalendarIcon, Camera, X } from "lucide-react"
+import { CalendarIcon, Camera, Plus, X } from "lucide-react"
 import { toast } from "sonner"
 import type { InbodyInput, InbodyRecord } from "@/entities/inbody"
 import { useCreateInbodyRecord, useUpdateInbodyRecord } from "@/features/inbody"
@@ -47,11 +47,7 @@ function parseNumberField(value: string, isEdit: boolean) {
   return Number(value)
 }
 
-function revokePreviewUrl(url: string | null) {
-  if (url?.startsWith("blob:")) {
-    URL.revokeObjectURL(url)
-  }
-}
+const MAX_IMAGES = 5
 
 export function InbodyForm({ open, onOpenChange, editRecord, defaultDate }: InbodyFormProps) {
   const createRecord = useCreateInbodyRecord()
@@ -73,50 +69,66 @@ export function InbodyForm({ open, onOpenChange, editRecord, defaultDate }: Inbo
   const [bodyFatMass, setBodyFatMass] = useState(editRecord?.bodyFatMass?.toString() ?? "")
   const [memo, setMemo] = useState(editRecord?.memo ?? "")
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
-  const [photo, setPhoto] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState(editRecord?.photoUrl ?? null)
-  const [isPhotoRemoved, setIsPhotoRemoved] = useState(false)
+  const [photos, setPhotos] = useState<File[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>(editRecord?.photoUrls ?? [])
 
   const isSubmitting = createRecord.isPending || updateRecord.isPending
   const selectedDate = parseDateValue(measuredDate)
+  const totalPhotos = photoPreviews.length
 
   useEffect(() => {
     return () => {
-      revokePreviewUrl(photoPreview)
+      for (const url of photoPreviews) {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url)
+      }
     }
-  }, [photoPreview])
+  }, [photoPreviews])
 
   async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const files = Array.from(event.target.files ?? [])
+    if (!files.length) return
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("이미지 파일만 업로드할 수 있습니다")
-      event.target.value = ""
-      return
+    const available = MAX_IMAGES - totalPhotos
+    if (files.length > available) {
+      toast.error(`최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다`)
     }
 
-    try {
-      const compressedPhoto = await compressImageToWebP(file)
-      revokePreviewUrl(photoPreview)
-      setPhoto(compressedPhoto)
-      setPhotoPreview(URL.createObjectURL(compressedPhoto))
-      setIsPhotoRemoved(false)
-      event.target.value = ""
-    } catch {
-      toast.error("사진 압축에 실패했습니다")
-      event.target.value = ""
+    const toProcess = files.slice(0, Math.max(0, available))
+    const newPhotos: File[] = []
+    const newPreviews: string[] = []
+
+    for (const file of toProcess) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("이미지 파일만 업로드할 수 있습니다")
+        continue
+      }
+      try {
+        const compressed = await compressImageToWebP(file)
+        newPhotos.push(compressed)
+        newPreviews.push(URL.createObjectURL(compressed))
+      } catch {
+        toast.error("사진 압축에 실패했습니다")
+      }
     }
+
+    if (newPhotos.length) {
+      setPhotos((prev) => [...prev, ...newPhotos])
+      setPhotoPreviews((prev) => [...prev, ...newPreviews])
+    }
+    event.target.value = ""
   }
 
-  function removePhoto() {
-    revokePreviewUrl(photoPreview)
-    setPhoto(null)
-    setPhotoPreview(null)
-    setIsPhotoRemoved(Boolean(editRecord?.photoUrl))
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
+  function removePhoto(index: number) {
+    const url = photoPreviews[index]
+    if (url?.startsWith("blob:")) {
+      URL.revokeObjectURL(url)
+      const existingCount = (editRecord?.photoUrls ?? []).length
+      const blobIndex = index - existingCount
+      if (blobIndex >= 0) {
+        setPhotos((prev) => prev.filter((_, i) => i !== blobIndex))
+      }
     }
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -133,14 +145,15 @@ export function InbodyForm({ open, onOpenChange, editRecord, defaultDate }: Inbo
     }
 
     if (editRecord) {
+      const existingPhotoUrls = photoPreviews.filter((url) => !url.startsWith("blob:"))
       await updateRecord.mutateAsync({
         id: editRecord.id,
         input,
-        photo: photo ?? undefined,
-        removePhoto: isPhotoRemoved,
+        photos: photos.length ? photos : undefined,
+        existingPhotoUrls,
       })
     } else {
-      await createRecord.mutateAsync({ input, photo: photo ?? undefined })
+      await createRecord.mutateAsync({ input, photos: photos.length ? photos : undefined })
     }
 
     onOpenChange(false)
@@ -265,27 +278,43 @@ export function InbodyForm({ open, onOpenChange, editRecord, defaultDate }: Inbo
           </div>
 
           <div className="space-y-2">
-            <Label>인바디 인증 사진</Label>
-            {photoPreview ? (
-              <div className="relative overflow-hidden rounded-xl border bg-muted">
-                <Image
-                  src={photoPreview}
-                  alt="인바디 인증 미리보기"
-                  width={960}
-                  height={720}
-                  className="aspect-[4/3] w-full object-cover"
-                  unoptimized
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon-sm"
-                  className="absolute top-3 right-3"
-                  onClick={removePhoto}
-                  aria-label="사진 선택 해제"
-                >
-                  <X className="size-4" />
-                </Button>
+            <div className="flex items-center justify-between">
+              <Label>인바디 인증 사진</Label>
+              <span className="text-xs text-muted-foreground">{totalPhotos}/{MAX_IMAGES}</span>
+            </div>
+            {totalPhotos > 0 ? (
+              <div className="grid grid-cols-3 gap-2">
+                {photoPreviews.map((url, index) => (
+                  <div key={url} className="relative overflow-hidden rounded-xl border bg-muted">
+                    <Image
+                      src={url}
+                      alt={`인바디 인증 사진 ${index + 1}`}
+                      width={320}
+                      height={240}
+                      className="aspect-[4/3] w-full object-cover"
+                      unoptimized
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon-sm"
+                      className="absolute top-1.5 right-1.5"
+                      onClick={() => removePhoto(index)}
+                      aria-label={`사진 ${index + 1} 삭제`}
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+                {totalPhotos < MAX_IMAGES && (
+                  <button
+                    type="button"
+                    className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-input bg-muted/40 text-muted-foreground hover:border-primary/50"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Plus className="size-5" />
+                  </button>
+                )}
               </div>
             ) : (
               <button
@@ -295,17 +324,18 @@ export function InbodyForm({ open, onOpenChange, editRecord, defaultDate }: Inbo
               >
                 <Camera className="size-5 text-primary" />
                 <span>인바디 사진을 업로드하세요</span>
-                <span className="text-xs">업로드한 이미지는 WebP로 압축됩니다</span>
+                <span className="text-xs">업로드한 이미지는 WebP로 압축됩니다 (최대 {MAX_IMAGES}장)</span>
               </button>
             )}
             <Input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={handlePhotoChange}
             />
-            {!photoPreview && (
+            {totalPhotos === 0 && (
               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
                 사진 선택
               </Button>

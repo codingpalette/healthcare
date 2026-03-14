@@ -5,10 +5,11 @@ import {
 } from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
-import { deletePublicFile, uploadPublicFile } from "@/app/api/_lib/r2-storage"
+import { deletePublicFile, deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 
 export const workoutRoutes = new Hono<AuthEnv>().use(authMiddleware)
 const MAX_WORKOUT_IMAGE_BYTES = 10 * 1024 * 1024
+const MAX_IMAGES = 5
 
 function getTodayDateString() {
   return new Date().toISOString().split("T")[0]
@@ -42,30 +43,30 @@ workoutRoutes.post("/", async (c) => {
   let caloriesBurned: string | undefined
   let notes: string | undefined
   let date: string | undefined
-  let mediaUrl: string | undefined
-  let mediaType: "image" | "video" | undefined
+  let mediaUrls: string[] = []
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()
-    const file = formData.get("file")
+    const files = formData.getAll("files")
 
-    if (file && file instanceof File) {
-      const isImage = file.type.startsWith("image/")
+    if (files.length > MAX_IMAGES) {
+      return c.json({ error: `이미지는 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다` }, 400)
+    }
 
-      if (!isImage) {
+    for (const file of files) {
+      if (!(file instanceof File)) continue
+      if (!file.type.startsWith("image/")) {
         return c.json({ error: "운동 인증은 이미지 파일만 업로드할 수 있습니다" }, 400)
       }
-      if (isImage && file.size > MAX_WORKOUT_IMAGE_BYTES) {
+      if (file.size > MAX_WORKOUT_IMAGE_BYTES) {
         return c.json({ error: "이미지 파일 크기는 10MB 이하여야 합니다" }, 400)
       }
-
       const uploaded = await uploadPublicFile({
         file,
         folder: "workouts",
         ownerId: userId,
       })
-      mediaUrl = uploaded.publicUrl
-      mediaType = "image"
+      mediaUrls.push(uploaded.publicUrl)
     }
 
     exerciseName = formData.get("exerciseName") as string | undefined
@@ -112,8 +113,7 @@ workoutRoutes.post("/", async (c) => {
   if (caloriesBurned) insertData.calories_burned = Number(caloriesBurned)
   if (notes) insertData.notes = notes
   if (date) insertData.date = date
-  if (mediaUrl) insertData.media_url = mediaUrl
-  if (mediaType) insertData.media_type = mediaType
+  if (mediaUrls.length) insertData.media_urls = mediaUrls
 
   const { data, error } = await adminSupabase
     .from("workouts")
@@ -242,7 +242,7 @@ workoutRoutes.patch("/:id", async (c) => {
 
   const { data: existing } = await adminSupabase
     .from("workouts")
-    .select("id, user_id, media_url")
+    .select("id, user_id, media_urls")
     .eq("id", workoutId)
     .single()
 
@@ -258,33 +258,41 @@ workoutRoutes.patch("/:id", async (c) => {
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()
-    const file = formData.get("file")
-    const removeMedia = formData.get("removeMedia") === "true"
+    const files = formData.getAll("files")
+    const existingUrlsRaw = formData.get("existingUrls")
+    const keptUrls: string[] = existingUrlsRaw
+      ? (JSON.parse(existingUrlsRaw as string) as string[])
+      : []
 
-    if (file && file instanceof File) {
-      const isImage = file.type.startsWith("image/")
+    if (files.length + keptUrls.length > MAX_IMAGES) {
+      return c.json({ error: `이미지는 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다` }, 400)
+    }
 
-      if (!isImage) {
+    const newlyUploaded: string[] = []
+    for (const file of files) {
+      if (!(file instanceof File)) continue
+      if (!file.type.startsWith("image/")) {
         return c.json({ error: "운동 인증은 이미지 파일만 업로드할 수 있습니다" }, 400)
       }
-      if (isImage && file.size > MAX_WORKOUT_IMAGE_BYTES) {
+      if (file.size > MAX_WORKOUT_IMAGE_BYTES) {
         return c.json({ error: "이미지 파일 크기는 10MB 이하여야 합니다" }, 400)
       }
-
-      await deletePublicFile(existing.media_url as string | null)
       const uploaded = await uploadPublicFile({
         file,
         folder: "workouts",
         ownerId: userId,
       })
-
-      updateData.media_url = uploaded.publicUrl
-      updateData.media_type = "image"
-    } else if (removeMedia) {
-      await deletePublicFile(existing.media_url as string | null)
-      updateData.media_url = null
-      updateData.media_type = null
+      newlyUploaded.push(uploaded.publicUrl)
     }
+
+    // 기존 URL 중 유지하지 않는 것들 삭제
+    const existingUrls = (existing.media_urls as string[] | null) ?? []
+    const urlsToDelete = existingUrls.filter((url) => !keptUrls.includes(url))
+    if (urlsToDelete.length > 0) {
+      await deletePublicFiles(urlsToDelete)
+    }
+
+    updateData.media_urls = [...keptUrls, ...newlyUploaded]
 
     const exerciseName = formData.get("exerciseName") as string | null
     const sets = formData.get("sets") as string | null
@@ -305,10 +313,14 @@ workoutRoutes.patch("/:id", async (c) => {
     if (date) updateData.date = date
   } else {
     const body = await c.req.json<Record<string, unknown>>()
-    if (body.removeMedia === true) {
-      await deletePublicFile(existing.media_url as string | null)
-      updateData.media_url = null
-      updateData.media_type = null
+    if (body.existingUrls !== undefined) {
+      const keptUrls = Array.isArray(body.existingUrls) ? (body.existingUrls as string[]) : []
+      const existingUrls = (existing.media_urls as string[] | null) ?? []
+      const urlsToDelete = existingUrls.filter((url) => !keptUrls.includes(url))
+      if (urlsToDelete.length > 0) {
+        await deletePublicFiles(urlsToDelete)
+      }
+      updateData.media_urls = keptUrls
     }
     if (body.exerciseName) updateData.exercise_name = body.exerciseName
     if (body.sets !== undefined) updateData.sets = body.sets
@@ -383,7 +395,7 @@ workoutRoutes.delete("/:id", async (c) => {
 
   const { data: existing } = await adminSupabase
     .from("workouts")
-    .select("id, user_id, media_url")
+    .select("id, user_id, media_urls")
     .eq("id", workoutId)
     .single()
 
@@ -392,7 +404,10 @@ workoutRoutes.delete("/:id", async (c) => {
     return c.json({ error: "본인의 운동 기록만 삭제할 수 있습니다" }, 403)
   }
 
-  await deletePublicFile(existing.media_url as string | null)
+  const urlsToDelete = (existing.media_urls as string[] | null) ?? []
+  if (urlsToDelete.length > 0) {
+    await deletePublicFiles(urlsToDelete)
+  }
 
   const { error } = await adminSupabase
     .from("workouts")

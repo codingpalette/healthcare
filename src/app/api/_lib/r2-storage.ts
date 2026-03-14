@@ -26,6 +26,10 @@ export async function uploadPublicFile(params: {
   }
 }
 
+export async function deletePublicFiles(publicUrls: string[]) {
+  await Promise.all(publicUrls.map((url) => deletePublicFile(url)))
+}
+
 export async function deletePublicFile(publicUrl: string | null | undefined) {
   if (!publicUrl) return
 

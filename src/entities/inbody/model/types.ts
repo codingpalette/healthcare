@@ -8,7 +8,7 @@ export interface InbodyRecord {
   bodyMassIndex: number | null
   bodyFatMass: number | null
   memo: string | null
-  photoUrl: string | null
+  photoUrls: string[]
   createdAt: string
   updatedAt: string
 }

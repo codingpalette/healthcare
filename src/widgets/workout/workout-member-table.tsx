@@ -13,7 +13,6 @@ import {
   MessageSquarePlus,
   MessageSquareText,
   Timer,
-  Video,
 } from "lucide-react"
 import { toast } from "sonner"
 import type { Workout, WorkoutWithProfile } from "@/entities/workout"
@@ -115,9 +114,11 @@ function WorkoutDetailDialog({
   const ensureChatRoom = useEnsureChatRoom()
   const sendChatMessage = useSendChatMessage()
   const [feedback, setFeedback] = useState(workout?.trainerFeedback ?? "")
+  const [imageIndex, setImageIndex] = useState(0)
 
   useEffect(() => {
     setFeedback(workout?.trainerFeedback ?? "")
+    setImageIndex(0)
   }, [workout])
 
   async function handleSaveFeedback() {
@@ -156,24 +157,41 @@ function WorkoutDetailDialog({
         {!workout ? null : (
           <div className="space-y-5">
             <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="overflow-hidden rounded-2xl bg-muted">
-                {workout.mediaUrl ? (
-                  workout.mediaType === "video" ? (
-                    <video
-                      src={workout.mediaUrl}
-                      controls
-                      className="aspect-video w-full bg-black object-contain"
-                    />
-                  ) : (
+              <div className="relative overflow-hidden rounded-2xl bg-muted">
+                {workout.mediaUrls.length > 0 ? (
+                  <>
                     <Image
-                      src={workout.mediaUrl}
-                      alt={`${workout.userName} 운동 인증`}
+                      src={workout.mediaUrls[imageIndex]}
+                      alt={`${workout.userName} 운동 인증 ${imageIndex + 1}`}
                       width={960}
                       height={720}
                       className="aspect-video w-full object-cover"
                       unoptimized
                     />
-                  )
+                    {workout.mediaUrls.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-opacity hover:bg-black/70 disabled:opacity-0"
+                          onClick={(e) => { e.stopPropagation(); setImageIndex((prev) => prev - 1) }}
+                          disabled={imageIndex === 0}
+                        >
+                          <ChevronLeft className="size-5" />
+                        </button>
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-opacity hover:bg-black/70 disabled:opacity-0"
+                          onClick={(e) => { e.stopPropagation(); setImageIndex((prev) => prev + 1) }}
+                          disabled={imageIndex === workout.mediaUrls.length - 1}
+                        >
+                          <ChevronRight className="size-5" />
+                        </button>
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-1 text-xs text-white">
+                          {imageIndex + 1} / {workout.mediaUrls.length}
+                        </div>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <div className="flex aspect-video items-center justify-center bg-primary/5 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
@@ -187,13 +205,10 @@ function WorkoutDetailDialog({
               <div className="space-y-3 rounded-2xl bg-muted/50 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-lg font-semibold">{workout.exerciseName}</h3>
-                  {workout.mediaType === "video" ? (
-                    <Badge variant="secondary" className="gap-1">
-                      <Video className="size-3" />
-                      영상
+                  {workout.mediaUrls.length > 0 && (
+                    <Badge variant="secondary">
+                      사진{workout.mediaUrls.length > 1 ? ` ${workout.mediaUrls.length}장` : ""}
                     </Badge>
-                  ) : (
-                    <Badge variant="secondary">사진</Badge>
                   )}
                 </div>
 

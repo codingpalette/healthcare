@@ -90,7 +90,7 @@ describe("MealForm", () => {
           fat: undefined,
           date: "2026-03-12",
         },
-        photo: compressedFile,
+        photos: [compressedFile],
       })
     })
   })

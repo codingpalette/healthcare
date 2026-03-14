@@ -38,8 +38,8 @@ export function useCreateMeal() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ input, photo }: { input: MealInput; photo?: File }) =>
-      createMeal(input, photo),
+    mutationFn: ({ input, photos }: { input: MealInput; photos?: File[] }) =>
+      createMeal(input, photos),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["diet"] })
     },
@@ -50,8 +50,17 @@ export function useUpdateMeal() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, input, photo }: { id: string; input: Partial<MealInput>; photo?: File }) =>
-      updateMeal(id, input, photo),
+    mutationFn: ({
+      id,
+      input,
+      photos,
+      existingPhotoUrls,
+    }: {
+      id: string
+      input: Partial<MealInput>
+      photos?: File[]
+      existingPhotoUrls?: string[]
+    }) => updateMeal(id, input, photos, existingPhotoUrls),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["diet"] })
     },

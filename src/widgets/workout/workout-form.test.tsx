@@ -79,8 +79,7 @@ describe("WorkoutForm", () => {
           durationMinutes: 20,
           caloriesBurned: 350,
           notes: "무척이나 힘듦",
-          mediaUrl: "https://example.com/workout.jpg",
-          mediaType: "image",
+          mediaUrls: ["https://example.com/workout.jpg"],
           trainerFeedback: null,
           date: "2026-03-12",
           createdAt: "2026-03-12T08:00:00+09:00",
@@ -89,10 +88,10 @@ describe("WorkoutForm", () => {
       />
     )
 
-    fireEvent.click(screen.getByRole("button", { name: "미디어 선택 해제" }))
+    fireEvent.click(screen.getByRole("button", { name: "사진 1 삭제" }))
 
-    expect(screen.queryByAltText("운동 인증 미리보기")).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "파일 선택" })).toBeInTheDocument()
+    expect(screen.queryByAltText("운동 인증 사진 1")).not.toBeInTheDocument()
+    expect(screen.getByText("운동 사진을 업로드하세요")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "운동 수정" }))
 
@@ -109,8 +108,8 @@ describe("WorkoutForm", () => {
           notes: "무척이나 힘듦",
           date: "2026-03-12",
         },
-        media: undefined,
-        removeMedia: true,
+        photos: undefined,
+        existingMediaUrls: [],
       })
     })
   })

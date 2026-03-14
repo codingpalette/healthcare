@@ -9,7 +9,7 @@ export interface Meal {
   carbs: number | null
   protein: number | null
   fat: number | null
-  photoUrl: string | null
+  photoUrls: string[]
   trainerFeedback: string | null
   date: string
   createdAt: string

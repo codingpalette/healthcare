@@ -175,9 +175,9 @@ function MemberDetailDialog({
                   {records.map((record) => (
                     <div key={record.id} className="rounded-xl border bg-card p-4">
                       <div className="flex flex-col gap-4 md:flex-row">
-                        {record.photoUrl ? (
+                        {record.photoUrls[0] ? (
                           <Image
-                            src={record.photoUrl}
+                            src={record.photoUrls[0]}
                             alt="회원 인바디 사진"
                             width={144}
                             height={144}

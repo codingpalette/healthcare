@@ -23,6 +23,8 @@ import {
   PopoverTrigger,
 } from "@/shared/ui"
 
+const MAX_IMAGES = 5
+
 interface WorkoutFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -59,12 +61,6 @@ function parseNumberField(value: string, isEdit: boolean) {
   return Number(value)
 }
 
-function revokePreviewUrl(url: string | null) {
-  if (url?.startsWith("blob:")) {
-    URL.revokeObjectURL(url)
-  }
-}
-
 export function WorkoutForm({
   open,
   onOpenChange,
@@ -85,57 +81,80 @@ export function WorkoutForm({
   const [notes, setNotes] = useState(editWorkout?.notes ?? "")
   const [date, setDate] = useState(editWorkout?.date ?? defaultDate ?? formatLocalDateValue(new Date()))
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
-  const [media, setMedia] = useState<File | null>(null)
-  const [mediaPreview, setMediaPreview] = useState(editWorkout?.mediaUrl ?? null)
-  const [mediaPreviewType, setMediaPreviewType] = useState<"image" | "video" | null>(
-    editWorkout?.mediaType ?? null
-  )
-  const [isMediaRemoved, setIsMediaRemoved] = useState(false)
+  const [photos, setPhotos] = useState<File[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>(editWorkout?.mediaUrls ?? [])
 
   const isSubmitting = createWorkout.isPending || updateWorkout.isPending
   const selectedDate = parseDateValue(date)
 
+  // blob URL 정리
   useEffect(() => {
     return () => {
-      revokePreviewUrl(mediaPreview)
+      for (const url of photoPreviews) {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url)
+        }
+      }
     }
-  }, [mediaPreview])
+  }, [photoPreviews])
 
-  function applySelectedMedia(file: File, previewType: "image" | "video") {
-    revokePreviewUrl(mediaPreview)
-    setMedia(file)
-    setMediaPreview(URL.createObjectURL(file))
-    setMediaPreviewType(previewType)
-    setIsMediaRemoved(false)
-  }
+  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? [])
+    if (!files.length) return
 
-  async function handleMediaChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const currentCount = photoPreviews.length
+    const remaining = MAX_IMAGES - currentCount
+
+    if (remaining <= 0) {
+      toast.error(`사진은 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다`)
+      event.target.value = ""
+      return
+    }
+
+    const filesToProcess = files.slice(0, remaining)
+
+    if (files.length > remaining) {
+      toast.error(`사진은 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다. ${remaining}장만 추가됩니다`)
+    }
 
     try {
-      if (file.type.startsWith("image/")) {
-        const compressedImage = await compressImageToWebP(file)
-        applySelectedMedia(compressedImage, "image")
-        event.target.value = ""
-        return
+      const newPhotos: File[] = []
+      const newPreviews: string[] = []
+
+      for (const file of filesToProcess) {
+        if (!file.type.startsWith("image/")) {
+          toast.error("운동 인증은 사진만 업로드할 수 있습니다")
+          continue
+        }
+        const compressed = await compressImageToWebP(file)
+        newPhotos.push(compressed)
+        newPreviews.push(URL.createObjectURL(compressed))
       }
 
-      toast.error("운동 인증은 사진만 업로드할 수 있습니다")
-      event.target.value = ""
+      setPhotos((prev) => [...prev, ...newPhotos])
+      setPhotoPreviews((prev) => [...prev, ...newPreviews])
     } catch {
       toast.error("미디어를 처리하지 못했습니다")
-      event.target.value = ""
     }
+
+    event.target.value = ""
   }
 
-  function removeMedia() {
-    revokePreviewUrl(mediaPreview)
-    setMedia(null)
-    setMediaPreview(null)
-    setMediaPreviewType(null)
-    setIsMediaRemoved(Boolean(editWorkout?.mediaUrl))
-    if (fileInputRef.current) fileInputRef.current.value = ""
+  function removePhoto(index: number) {
+    const url = photoPreviews[index]
+    if (url?.startsWith("blob:")) {
+      URL.revokeObjectURL(url)
+    }
+
+    // blob URL인 경우 photos 배열에서도 제거
+    // photos는 새로 추가된 파일만 담고 있으므로 index 매핑 필요
+    const blobPreviews = photoPreviews.filter((u) => u.startsWith("blob:"))
+    const blobIndex = blobPreviews.indexOf(url ?? "")
+    if (blobIndex !== -1) {
+      setPhotos((prev) => prev.filter((_, i) => i !== blobIndex))
+    }
+
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -153,21 +172,26 @@ export function WorkoutForm({
     }
 
     if (editWorkout) {
+      // blob URL이 아닌 것 = 기존 서버 URL
+      const existingMediaUrls = photoPreviews.filter((url) => !url.startsWith("blob:"))
       await updateWorkout.mutateAsync({
         id: editWorkout.id,
         input,
-        media: media ?? undefined,
-        removeMedia: isMediaRemoved,
+        photos: photos.length ? photos : undefined,
+        existingMediaUrls,
       })
     } else {
       await createWorkout.mutateAsync({
         input,
-        media: media ?? undefined,
+        photos: photos.length ? photos : undefined,
       })
     }
 
     onOpenChange(false)
   }
+
+  const totalCount = photoPreviews.length
+  const canAddMore = totalCount < MAX_IMAGES
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -294,35 +318,49 @@ export function WorkoutForm({
           </div>
 
           <div className="space-y-2">
-            <Label>운동 인증 사진</Label>
-            {mediaPreview ? (
-              <div className="relative overflow-hidden rounded-xl border bg-muted">
-                {mediaPreviewType === "video" ? (
-                  <video
-                    src={mediaPreview}
-                    controls
-                    className="aspect-video w-full bg-black object-contain"
-                  />
-                ) : (
-                  <Image
-                    src={mediaPreview}
-                    alt="운동 인증 미리보기"
-                    width={960}
-                    height={720}
-                    className="aspect-video w-full object-cover"
-                    unoptimized
-                  />
+            <div className="flex items-center justify-between">
+              <Label>운동 인증 사진</Label>
+              {totalCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {totalCount}/{MAX_IMAGES}
+                </span>
+              )}
+            </div>
+
+            {totalCount > 0 ? (
+              <div className="grid grid-cols-3 gap-2">
+                {photoPreviews.map((preview, index) => (
+                  <div key={preview} className="relative overflow-hidden rounded-xl border bg-muted">
+                    <Image
+                      src={preview}
+                      alt={`운동 인증 사진 ${index + 1}`}
+                      width={300}
+                      height={300}
+                      className="aspect-square w-full object-cover"
+                      unoptimized
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon-sm"
+                      className="absolute top-1 right-1"
+                      onClick={() => removePhoto(index)}
+                      aria-label={`사진 ${index + 1} 삭제`}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ))}
+                {canAddMore && (
+                  <button
+                    type="button"
+                    className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-input bg-muted/40 text-sm text-muted-foreground"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera className="size-5 text-primary" />
+                    <span className="text-xs">추가</span>
+                  </button>
                 )}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon-sm"
-                  className="absolute top-3 right-3"
-                  onClick={removeMedia}
-                  aria-label="미디어 선택 해제"
-                >
-                  <X className="size-4" />
-                </Button>
               </div>
             ) : (
               <button
@@ -337,14 +375,16 @@ export function WorkoutForm({
                 <span className="text-xs">업로드한 이미지는 WebP로 압축됩니다</span>
               </button>
             )}
+
             <Input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
-              onChange={handleMediaChange}
+              onChange={handlePhotoChange}
             />
-            {!mediaPreview && (
+            {totalCount === 0 && (
               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
                 파일 선택
               </Button>

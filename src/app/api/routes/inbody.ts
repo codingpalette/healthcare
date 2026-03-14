@@ -1,11 +1,12 @@
 import { Hono } from "hono"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
-import { deletePublicFile, uploadPublicFile } from "@/app/api/_lib/r2-storage"
+import { deletePublicFile, deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 
 export const inbodyRoutes = new Hono<AuthEnv>().use(authMiddleware)
 
 const MAX_INBODY_IMAGE_BYTES = 10 * 1024 * 1024
+const MAX_IMAGES = 5
 
 function applyDateFilter<T extends {
   gte: (column: string, value: string) => T
@@ -37,23 +38,27 @@ inbodyRoutes.post("/", async (c) => {
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()
-    const file = formData.get("file")
+    const files = formData.getAll("files").filter((f): f is File => f instanceof File)
 
-    if (file && file instanceof File) {
-      if (!file.type.startsWith("image/")) {
-        return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
+    if (files.length > 0) {
+      if (files.length > MAX_IMAGES) {
+        return c.json({ error: `이미지는 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다` }, 400)
       }
-      if (file.size > MAX_INBODY_IMAGE_BYTES) {
-        return c.json({ error: "이미지 파일 크기는 10MB 이하여야 합니다" }, 400)
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) {
+          return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
+        }
+        if (file.size > MAX_INBODY_IMAGE_BYTES) {
+          return c.json({ error: "이미지 파일 크기는 10MB 이하여야 합니다" }, 400)
+        }
       }
 
-      const uploaded = await uploadPublicFile({
-        file,
-        folder: "inbody",
-        ownerId: userId,
-      })
-
-      insertData.photo_url = uploaded.publicUrl
+      const uploadedUrls = await Promise.all(
+        files.map((file) =>
+          uploadPublicFile({ file, folder: "inbody", ownerId: userId }).then((r) => r.publicUrl)
+        )
+      )
+      insertData.photo_urls = uploadedUrls
     }
 
     const measuredDate = formData.get("measuredDate") as string | null
@@ -216,7 +221,7 @@ inbodyRoutes.patch("/:id", async (c) => {
   const adminSupabase = createAdminSupabase()
   const { data: existing } = await adminSupabase
     .from("inbody_records")
-    .select("id, user_id, photo_url")
+    .select("id, user_id, photo_urls")
     .eq("id", recordId)
     .single()
 
@@ -232,28 +237,38 @@ inbodyRoutes.patch("/:id", async (c) => {
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()
-    const file = formData.get("file")
-    const removePhoto = formData.get("removePhoto") === "true"
+    const files = formData.getAll("files").filter((f): f is File => f instanceof File)
+    const existingUrlsRaw = formData.get("existingUrls")
+    const keptUrls: string[] = existingUrlsRaw
+      ? (JSON.parse(existingUrlsRaw as string) as string[])
+      : []
 
-    if (file && file instanceof File) {
+    if (files.length + keptUrls.length > MAX_IMAGES) {
+      return c.json({ error: `이미지는 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다` }, 400)
+    }
+
+    for (const file of files) {
       if (!file.type.startsWith("image/")) {
         return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
       }
       if (file.size > MAX_INBODY_IMAGE_BYTES) {
         return c.json({ error: "이미지 파일 크기는 10MB 이하여야 합니다" }, 400)
       }
-
-      await deletePublicFile(existing.photo_url as string | null)
-      const uploaded = await uploadPublicFile({
-        file,
-        folder: "inbody",
-        ownerId: userId,
-      })
-      updateData.photo_url = uploaded.publicUrl
-    } else if (removePhoto) {
-      await deletePublicFile(existing.photo_url as string | null)
-      updateData.photo_url = null
     }
+
+    // 유지하지 않는 기존 URL 삭제
+    const previousUrls = (existing.photo_urls as string[] | null) ?? []
+    const urlsToDelete = previousUrls.filter((url) => !keptUrls.includes(url))
+    await deletePublicFiles(urlsToDelete)
+
+    // 새 파일 업로드
+    const newlyUploadedUrls = await Promise.all(
+      files.map((file) =>
+        uploadPublicFile({ file, folder: "inbody", ownerId: userId }).then((r) => r.publicUrl)
+      )
+    )
+
+    updateData.photo_urls = [...keptUrls, ...newlyUploadedUrls]
 
     const measuredDate = formData.get("measuredDate") as string | null
     const weight = formData.get("weight") as string | null
@@ -272,10 +287,6 @@ inbodyRoutes.patch("/:id", async (c) => {
     if (memo !== null) updateData.memo = memo || null
   } else {
     const body = await c.req.json<Record<string, unknown>>()
-    if (body.removePhoto === true) {
-      await deletePublicFile(existing.photo_url as string | null)
-      updateData.photo_url = null
-    }
     if (body.measuredDate) updateData.measured_date = body.measuredDate
     if (body.weight !== undefined) updateData.weight = body.weight
     if (body.skeletalMuscleMass !== undefined) updateData.skeletal_muscle_mass = body.skeletalMuscleMass
@@ -302,7 +313,7 @@ inbodyRoutes.delete("/:id", async (c) => {
   const adminSupabase = createAdminSupabase()
   const { data: existing } = await adminSupabase
     .from("inbody_records")
-    .select("id, user_id, photo_url")
+    .select("id, user_id, photo_urls")
     .eq("id", recordId)
     .single()
 
@@ -311,7 +322,7 @@ inbodyRoutes.delete("/:id", async (c) => {
     return c.json({ error: "본인의 인바디 기록만 삭제할 수 있습니다" }, 403)
   }
 
-  await deletePublicFile(existing.photo_url as string | null)
+  await deletePublicFiles((existing.photo_urls as string[] | null) ?? [])
 
   const { error } = await adminSupabase
     .from("inbody_records")

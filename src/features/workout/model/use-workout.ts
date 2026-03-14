@@ -38,8 +38,8 @@ export function useCreateWorkout() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ input, media }: { input: WorkoutInput; media?: File }) =>
-      createWorkout(input, media),
+    mutationFn: ({ input, photos }: { input: WorkoutInput; photos?: File[] }) =>
+      createWorkout(input, photos),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workout"] })
     },
@@ -53,14 +53,14 @@ export function useUpdateWorkout() {
     mutationFn: ({
       id,
       input,
-      media,
-      removeMedia,
+      photos,
+      existingMediaUrls,
     }: {
       id: string
       input: Partial<WorkoutInput>
-      media?: File
-      removeMedia?: boolean
-    }) => updateWorkout(id, input, media, removeMedia),
+      photos?: File[]
+      existingMediaUrls?: string[]
+    }) => updateWorkout(id, input, photos, existingMediaUrls),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workout"] })
     },

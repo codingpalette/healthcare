@@ -55,8 +55,8 @@ export function useCreateInbodyRecord() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ input, photo }: { input: InbodyInput; photo?: File }) =>
-      createInbodyRecord(input, photo),
+    mutationFn: ({ input, photos }: { input: InbodyInput; photos?: File[] }) =>
+      createInbodyRecord(input, photos),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inbody"] })
     },
@@ -70,14 +70,14 @@ export function useUpdateInbodyRecord() {
     mutationFn: ({
       id,
       input,
-      photo,
-      removePhoto,
+      photos,
+      existingPhotoUrls,
     }: {
       id: string
       input: Partial<InbodyInput>
-      photo?: File
-      removePhoto?: boolean
-    }) => updateInbodyRecord(id, input, photo, removePhoto),
+      photos?: File[]
+      existingPhotoUrls?: string[]
+    }) => updateInbodyRecord(id, input, photos, existingPhotoUrls),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inbody"] })
     },

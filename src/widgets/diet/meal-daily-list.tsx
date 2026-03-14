@@ -201,11 +201,11 @@ export function MealDailyList() {
                     key={meal.id}
                     className="flex items-start gap-3 rounded-xl bg-muted/50 p-3"
                   >
-                    {meal.photoUrl ? (
+                    {meal.photoUrls.length > 0 ? (
                       <Image
                         width={64}
                         height={64}
-                        src={meal.photoUrl}
+                        src={meal.photoUrls[0]}
                         alt={config.label}
                         className="size-16 shrink-0 rounded-lg object-cover"
                         unoptimized

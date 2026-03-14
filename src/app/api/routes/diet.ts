@@ -5,7 +5,9 @@ import {
 } from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
-import { deletePublicFile, uploadPublicFile } from "@/app/api/_lib/r2-storage"
+import { deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
+
+const MAX_IMAGES = 5
 
 export const dietRoutes = new Hono<AuthEnv>().use(authMiddleware)
 
@@ -37,13 +39,18 @@ dietRoutes.post("/", async (c) => {
   let protein: string | undefined
   let fat: string | undefined
   let date: string | undefined
-  let photoUrl: string | undefined
+  const photoUrls: string[] = []
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()
-    const file = formData.get("file")
+    const files = formData.getAll("files")
 
-    if (file && file instanceof File) {
+    if (files.length > MAX_IMAGES) {
+      return c.json({ error: `이미지는 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다` }, 400)
+    }
+
+    for (const file of files) {
+      if (!(file instanceof File)) continue
       if (!file.type.startsWith("image/")) {
         return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
       }
@@ -56,7 +63,7 @@ dietRoutes.post("/", async (c) => {
         folder: "meals",
         ownerId: userId,
       })
-      photoUrl = uploaded.publicUrl
+      photoUrls.push(uploaded.publicUrl)
     }
 
     mealType = formData.get("mealType") as string | undefined
@@ -98,7 +105,7 @@ dietRoutes.post("/", async (c) => {
   if (carbs) insertData.carbs = Number(carbs)
   if (protein) insertData.protein = Number(protein)
   if (fat) insertData.fat = Number(fat)
-  if (photoUrl) insertData.photo_url = photoUrl
+  if (photoUrls.length) insertData.photo_urls = photoUrls
   if (date) insertData.date = date
 
   const { data, error } = await adminSupabase
@@ -233,7 +240,7 @@ dietRoutes.patch("/:id", async (c) => {
 
   const { data: existing } = await adminSupabase
     .from("meals")
-    .select("id, user_id, photo_url")
+    .select("id, user_id, photo_urls")
     .eq("id", mealId)
     .single()
 
@@ -249,24 +256,46 @@ dietRoutes.patch("/:id", async (c) => {
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()
-    const file = formData.get("file")
+    const files = formData.getAll("files")
+    const existingUrlsRaw = formData.get("existingUrls")
+    const existingUrls: string[] = existingUrlsRaw
+      ? (JSON.parse(existingUrlsRaw as string) as string[])
+      : []
 
-    if (file && file instanceof File) {
+    const newFiles = files.filter((f): f is File => f instanceof File)
+
+    if (newFiles.length + existingUrls.length > MAX_IMAGES) {
+      return c.json({ error: `이미지는 최대 ${MAX_IMAGES}장까지 업로드할 수 있습니다` }, 400)
+    }
+
+    for (const file of newFiles) {
       if (!file.type.startsWith("image/")) {
         return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400)
       }
       if (file.size > 10 * 1024 * 1024) {
         return c.json({ error: "파일 크기는 10MB 이하여야 합니다" }, 400)
       }
+    }
 
-      await deletePublicFile(existing.photo_url as string | null)
+    // 제거된 기존 URL을 R2에서 삭제
+    const previousUrls = (existing.photo_urls as string[] | null) ?? []
+    const removedUrls = previousUrls.filter((url) => !existingUrls.includes(url))
+    if (removedUrls.length > 0) {
+      await deletePublicFiles(removedUrls)
+    }
+
+    // 새 파일 업로드
+    const newUrls: string[] = []
+    for (const file of newFiles) {
       const uploaded = await uploadPublicFile({
         file,
         folder: "meals",
         ownerId: userId,
       })
-      updateData.photo_url = uploaded.publicUrl
+      newUrls.push(uploaded.publicUrl)
     }
+
+    updateData.photo_urls = [...existingUrls, ...newUrls]
 
     const mealType = formData.get("mealType") as string | null
     const description = formData.get("description") as string | null
@@ -312,7 +341,7 @@ dietRoutes.delete("/:id", async (c) => {
 
   const { data: existing } = await adminSupabase
     .from("meals")
-    .select("id, user_id, photo_url")
+    .select("id, user_id, photo_urls")
     .eq("id", mealId)
     .single()
 
@@ -321,7 +350,7 @@ dietRoutes.delete("/:id", async (c) => {
     return c.json({ error: "본인의 식단만 삭제할 수 있습니다" }, 403)
   }
 
-  await deletePublicFile(existing.photo_url as string | null)
+  await deletePublicFiles((existing.photo_urls as string[] | null) ?? [])
 
   const { error } = await adminSupabase
     .from("meals")

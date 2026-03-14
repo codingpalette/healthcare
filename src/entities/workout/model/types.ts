@@ -1,5 +1,3 @@
-export type WorkoutMediaType = "image" | "video"
-
 export interface Workout {
   id: string
   userId: string
@@ -10,8 +8,7 @@ export interface Workout {
   durationMinutes: number | null
   caloriesBurned: number | null
   notes: string | null
-  mediaUrl: string | null
-  mediaType: WorkoutMediaType | null
+  mediaUrls: string[]
   trainerFeedback: string | null
   date: string
   createdAt: string

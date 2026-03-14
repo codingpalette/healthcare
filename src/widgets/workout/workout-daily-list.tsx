@@ -7,13 +7,14 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Dumbbell,
+  Flame,
   MessagesSquare,
   Pencil,
   Plus,
   Timer,
   Trash2,
-  Video,
 } from "lucide-react"
 import { toast } from "sonner"
 import type { Workout } from "@/entities/workout"
@@ -36,6 +37,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -78,6 +84,133 @@ function formatWorkoutMeta(workout: Workout) {
     .join(" · ")
 }
 
+function WorkoutDetailDialog({
+  workout,
+  open,
+  onOpenChange,
+}: {
+  workout: Workout | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const [imageIndex, setImageIndex] = useState(0)
+
+  if (!workout) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{workout.exerciseName}</DialogTitle>
+          <DialogDescription>운동 상세 정보와 인증 사진을 확인하세요.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* 이미지 갤러리 */}
+          <div className="relative overflow-hidden rounded-2xl bg-muted">
+            {workout.mediaUrls.length > 0 ? (
+              <>
+                <Image
+                  src={workout.mediaUrls[imageIndex]}
+                  alt={`${workout.exerciseName} ${imageIndex + 1}`}
+                  width={960}
+                  height={720}
+                  className="aspect-video w-full object-cover"
+                  unoptimized
+                />
+                {workout.mediaUrls.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-opacity hover:bg-black/70 disabled:opacity-0"
+                      onClick={() => setImageIndex((prev) => prev - 1)}
+                      disabled={imageIndex === 0}
+                    >
+                      <ChevronLeft className="size-5" />
+                    </button>
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-opacity hover:bg-black/70 disabled:opacity-0"
+                      onClick={() => setImageIndex((prev) => prev + 1)}
+                      disabled={imageIndex === workout.mediaUrls.length - 1}
+                    >
+                      <ChevronRight className="size-5" />
+                    </button>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-1 text-xs text-white">
+                      {imageIndex + 1} / {workout.mediaUrls.length}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="flex aspect-video items-center justify-center bg-primary/5 text-muted-foreground">
+                <div className="flex flex-col items-center gap-2">
+                  <Dumbbell className="size-6 text-primary" />
+                  <p className="text-sm">등록된 인증 미디어가 없습니다</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 운동 메타 정보 카드 */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock3 className="size-3.5" />
+                기록 시간
+              </p>
+              <p className="mt-1 font-semibold">
+                {new Date(workout.createdAt).toLocaleTimeString("ko-KR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Timer className="size-3.5" />
+                운동 시간
+              </p>
+              <p className="mt-1 font-semibold">
+                {workout.durationMinutes != null ? `${workout.durationMinutes}분` : "-"}
+              </p>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">세트/횟수/중량</p>
+              <p className="mt-1 font-semibold">{formatWorkoutMeta(workout) || "-"}</p>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Flame className="size-3.5" />
+                소모 칼로리
+              </p>
+              <p className="mt-1 font-semibold">
+                {workout.caloriesBurned != null ? `${workout.caloriesBurned}kcal` : "-"}
+              </p>
+            </div>
+          </div>
+
+          {/* 운동일지 */}
+          {workout.notes?.trim() && (
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">운동일지</p>
+              <p className="mt-1 text-sm">{workout.notes}</p>
+            </div>
+          )}
+
+          {/* 트레이너 피드백 */}
+          {workout.trainerFeedback?.trim() && (
+            <div className="rounded-xl bg-primary/5 p-3">
+              <p className="text-xs text-primary">트레이너 피드백</p>
+              <p className="mt-1 text-sm">{workout.trainerFeedback}</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function WorkoutDailyList() {
   const today = formatLocalDateValue(new Date())
   const todayDate = new Date(`${today}T00:00:00`)
@@ -86,6 +219,7 @@ export function WorkoutDailyList() {
   const [formOpen, setFormOpen] = useState(false)
   const [editWorkout, setEditWorkout] = useState<Workout | undefined>()
   const [workoutToDelete, setWorkoutToDelete] = useState<Workout | undefined>()
+  const [detailWorkout, setDetailWorkout] = useState<Workout | undefined>()
 
   const { data: workouts, isLoading } = useMyWorkouts(selectedDate, selectedDate)
   const deleteWorkout = useDeleteWorkout()
@@ -235,25 +369,28 @@ export function WorkoutDailyList() {
           ) : (
             <div className="space-y-3">
               {workouts.map((workout) => (
-                <div key={workout.id} className="rounded-2xl border bg-card p-4">
+                <div
+                  key={workout.id}
+                  className="cursor-pointer rounded-2xl border bg-card p-4"
+                  onClick={() => setDetailWorkout(workout)}
+                >
                   <div className="flex flex-col gap-4 sm:flex-row">
-                    {workout.mediaUrl ? (
-                      workout.mediaType === "video" ? (
-                        <video
-                          src={workout.mediaUrl}
-                          controls
-                          className="h-40 w-full shrink-0 rounded-xl bg-black object-cover sm:h-28 sm:w-32"
-                        />
-                      ) : (
+                    {workout.mediaUrls.length > 0 ? (
+                      <div className="relative h-40 w-full shrink-0 sm:h-28 sm:w-32">
                         <Image
-                          src={workout.mediaUrl}
+                          src={workout.mediaUrls[0]}
                           alt={workout.exerciseName}
                           width={192}
                           height={144}
-                          className="h-40 w-full shrink-0 rounded-xl object-cover sm:h-28 sm:w-32"
+                          className="h-full w-full rounded-xl object-cover"
                           unoptimized
                         />
-                      )
+                        {workout.mediaUrls.length > 1 && (
+                          <div className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                            +{workout.mediaUrls.length - 1}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="flex h-40 w-full shrink-0 flex-col items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-28 sm:w-32">
                         <Dumbbell className="size-6" />
@@ -266,12 +403,6 @@ export function WorkoutDailyList() {
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold">{workout.exerciseName}</h3>
-                            {workout.mediaType === "video" && (
-                              <Badge variant="secondary" className="gap-1">
-                                <Video className="size-3" />
-                                영상
-                              </Badge>
-                            )}
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
                             {formatWorkoutMeta(workout) || "세트, 횟수, 중량 정보 없음"}
@@ -282,7 +413,7 @@ export function WorkoutDailyList() {
                             variant="ghost"
                             size="icon-sm"
                             aria-label="운동 수정"
-                            onClick={() => handleEdit(workout)}
+                            onClick={(e) => { e.stopPropagation(); handleEdit(workout) }}
                           >
                             <Pencil className="size-3.5" />
                           </Button>
@@ -290,7 +421,7 @@ export function WorkoutDailyList() {
                             variant="ghost"
                             size="icon-sm"
                             aria-label="운동 삭제"
-                            onClick={() => setWorkoutToDelete(workout)}
+                            onClick={(e) => { e.stopPropagation(); setWorkoutToDelete(workout) }}
                           >
                             <Trash2 className="size-3.5 text-destructive" />
                           </Button>
@@ -320,7 +451,7 @@ export function WorkoutDailyList() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleShareToChat(workout)}
+                          onClick={(e) => { e.stopPropagation(); handleShareToChat(workout) }}
                           disabled={
                             !profile?.trainerId ||
                             ensureChatRoom.isPending ||
@@ -333,6 +464,7 @@ export function WorkoutDailyList() {
                         <Link
                           href="/chat"
                           className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           관리톡 보기
                         </Link>
@@ -362,6 +494,15 @@ export function WorkoutDailyList() {
         }}
         editWorkout={editWorkout}
         defaultDate={selectedDate}
+      />
+
+      <WorkoutDetailDialog
+        key={detailWorkout?.id}
+        workout={detailWorkout ?? null}
+        open={!!detailWorkout}
+        onOpenChange={(open) => {
+          if (!open) setDetailWorkout(undefined)
+        }}
       />
 
       <AlertDialog

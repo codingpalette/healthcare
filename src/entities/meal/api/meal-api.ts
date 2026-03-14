@@ -12,7 +12,7 @@ function toMeal(row: Record<string, unknown>): Meal {
     carbs: (row.carbs as number) ?? null,
     protein: (row.protein as number) ?? null,
     fat: (row.fat as number) ?? null,
-    photoUrl: (row.photo_url as string) ?? null,
+    photoUrls: (row.photo_urls as string[]) ?? [],
     trainerFeedback: (row.trainer_feedback as string) ?? null,
     date: row.date as string,
     createdAt: row.created_at as string,
@@ -28,15 +28,15 @@ function toMealWithProfile(row: Record<string, unknown>): MealWithProfile {
 }
 
 // 식단 생성
-export async function createMeal(input: MealInput, photo?: File): Promise<Meal> {
+export async function createMeal(input: MealInput, photos?: File[]): Promise<Meal> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증되지 않은 사용자입니다")
 
   let res: Response
 
-  if (photo) {
+  if (photos?.length) {
     const formData = new FormData()
-    formData.append("file", photo)
+    for (const file of photos) formData.append("files", file)
     formData.append("mealType", input.mealType)
     if (input.description) formData.append("description", input.description)
     if (input.calories != null) formData.append("calories", String(input.calories))
@@ -150,15 +150,26 @@ export async function getMemberMeals(
 }
 
 // 식단 수정
-export async function updateMeal(id: string, input: Partial<MealInput>, photo?: File): Promise<Meal> {
+export async function updateMeal(
+  id: string,
+  input: Partial<MealInput>,
+  photos?: File[],
+  existingPhotoUrls?: string[]
+): Promise<Meal> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증되지 않은 사용자입니다")
 
+  const hasFiles = photos && photos.length > 0
   let res: Response
 
-  if (photo) {
+  if (hasFiles || existingPhotoUrls) {
     const formData = new FormData()
-    formData.append("file", photo)
+    if (photos) {
+      for (const file of photos) formData.append("files", file)
+    }
+    if (existingPhotoUrls) {
+      formData.append("existingUrls", JSON.stringify(existingPhotoUrls))
+    }
     if (input.mealType) formData.append("mealType", input.mealType)
     if (input.description) formData.append("description", input.description)
     if (input.calories != null) formData.append("calories", String(input.calories))
