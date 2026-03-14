@@ -9,9 +9,8 @@ export type AuthEnv = {
   }
 }
 
-// 활동 추적 throttle (5분)
-const ACTIVITY_THROTTLE_MS = 5 * 60 * 1000
-const lastActivityUpdate = new Map<string, number>()
+// 활동 추적 throttle (5분) — DB 기반으로 Serverless 환경에서도 동작
+const ACTIVITY_THROTTLE_MINUTES = 5
 
 export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
   const authorization = c.req.header("Authorization")
@@ -49,26 +48,17 @@ export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
   c.set("userId", user.id)
   c.set("userRole", profile?.role ?? "member")
 
-  // 활동 추적 (X-Device-Id 헤더가 있을 때만)
+  // 활동 추적 (X-Device-Id 헤더가 있을 때만, DB 기반 throttle)
   const deviceId = c.req.header("X-Device-Id")
   if (deviceId) {
-    const cacheKey = `${user.id}:${deviceId}`
-    const now = Date.now()
-    const lastUpdate = lastActivityUpdate.get(cacheKey) ?? 0
-
-    if (now - lastUpdate > ACTIVITY_THROTTLE_MS) {
-      if (lastActivityUpdate.size > 10000) {
-        lastActivityUpdate.clear()
-      }
-      lastActivityUpdate.set(cacheKey, now)
-      // 비동기로 갱신 (응답 지연 방지)
-      supabase
-        .from("user_devices")
-        .update({ last_active_at: new Date().toISOString() })
-        .eq("id", deviceId)
-        .eq("user_id", user.id)
-        .then(() => {})
-    }
+    // DB에서 last_active_at 확인하여 5분 이내면 갱신 스킵
+    supabase
+      .from("user_devices")
+      .update({ last_active_at: new Date().toISOString() })
+      .eq("id", deviceId)
+      .eq("user_id", user.id)
+      .lt("last_active_at", new Date(Date.now() - ACTIVITY_THROTTLE_MINUTES * 60 * 1000).toISOString())
+      .then(() => {})
   }
 
   await next()
