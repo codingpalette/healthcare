@@ -2,6 +2,7 @@
 
 import { ProfileEditForm } from "@/features/profile"
 import { NotificationSettingsForm } from "@/features/notification"
+import { MyDeviceList } from "@/features/device-management"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui"
 
 export function SettingsPage() {
@@ -17,6 +18,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
       <NotificationSettingsForm />
+      <MyDeviceList />
     </div>
   )
 }
