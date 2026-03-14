@@ -16,6 +16,7 @@ function ThemeProvider({
       {...props}
     >
       <ThemeHotkey />
+      <ThemeColor />
       {children}
     </NextThemesProvider>
   )
@@ -64,6 +65,24 @@ function ThemeHotkey() {
       window.removeEventListener("keydown", onKeyDown)
     }
   }, [resolvedTheme, setTheme])
+
+  return null
+}
+
+// Safari 하단 바 등 브라우저 UI 색상을 테마에 맞게 동기화
+function ThemeColor() {
+  const { resolvedTheme } = useTheme()
+
+  React.useEffect(() => {
+    const color = resolvedTheme === "dark" ? "oklch(0.141 0.005 285.823)" : "oklch(1 0 0)"
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    if (!meta) {
+      meta = document.createElement("meta")
+      meta.name = "theme-color"
+      document.head.appendChild(meta)
+    }
+    meta.content = color
+  }, [resolvedTheme])
 
   return null
 }
