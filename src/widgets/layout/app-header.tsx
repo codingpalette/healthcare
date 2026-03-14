@@ -1,7 +1,11 @@
 "use client"
 
+import { Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 
+import { Button } from "@/shared/ui/button"
 import { SidebarTrigger } from "@/shared/ui/sidebar"
 import { NotificationBell } from "@/widgets/layout/notification-bell"
 
@@ -31,9 +35,37 @@ export function AppHeader() {
       <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
       <div className="mx-1 hidden h-4 w-px shrink-0 bg-border md:block" />
       <h1 className="text-base font-semibold">{title}</h1>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        <ThemeToggle />
         <NotificationBell />
       </div>
     </header>
+  )
+}
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+        <Sun className="h-4 w-4" />
+      </Button>
+    )
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+    >
+      {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      <span className="sr-only">테마 전환</span>
+    </Button>
   )
 }
