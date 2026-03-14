@@ -1,1 +1,1 @@
-export { signUp, signIn, signOut } from "./auth-api"
+export { signUp, signIn, signOut, parseDeviceInfo } from "./auth-api"

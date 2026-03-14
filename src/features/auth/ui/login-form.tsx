@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation"
 import { signIn } from "@/features/auth/api"
 import { resolveEmail } from "@/shared/lib/resolve-email"
 import { Button } from "@/shared/ui/button"
+import { generateDeviceFingerprint, storeDeviceId } from "@/shared/lib/device-fingerprint"
+import { registerDevice, DeviceLimitError, type Device } from "@/entities/device"
+import { DeviceLimitScreen } from "@/features/device-management"
+import { parseDeviceInfo } from "../api/auth-api"
 
 export function LoginForm() {
   const router = useRouter()
@@ -12,6 +16,16 @@ export function LoginForm() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [limitDevices, setLimitDevices] = useState<Device[] | null>(null)
+
+  const attemptDeviceRegistration = async () => {
+    const fingerprint = generateDeviceFingerprint()
+    const deviceInfo = parseDeviceInfo()
+    const device = await registerDevice({ ...deviceInfo, deviceFingerprint: fingerprint })
+    storeDeviceId(device.id)
+    router.push("/")
+    router.refresh()
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,13 +34,38 @@ export function LoginForm() {
 
     try {
       await signIn({ email: resolveEmail(email), password })
-      router.push("/")
-      router.refresh()
+      try {
+        await attemptDeviceRegistration()
+      } catch (e: unknown) {
+        if (e instanceof DeviceLimitError) {
+          setLimitDevices(e.devices)
+        } else {
+          setError(e instanceof Error ? e.message : "기기 등록에 실패했습니다")
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "로그인에 실패했습니다")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // 기기 한도 초과 시 기기 선택 화면 표시
+  if (limitDevices) {
+    return (
+      <DeviceLimitScreen
+        devices={limitDevices}
+        onDeviceRemoved={async () => {
+          try {
+            await attemptDeviceRegistration()
+          } catch (e: unknown) {
+            if (e instanceof DeviceLimitError) {
+              setLimitDevices(e.devices)
+            }
+          }
+        }}
+      />
+    )
   }
 
   return (
