@@ -2,6 +2,7 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { UAParser } = require("ua-parser-js") as { UAParser: typeof import("ua-parser-js").UAParser }
 import { supabase } from "@/shared/api/supabase"
+import { removeStoredDeviceId } from "@/shared/lib/device-fingerprint"
 import type { UserRole } from "@/entities/user"
 import type { RegisterDeviceRequest } from "@/entities/device"
 
@@ -41,6 +42,7 @@ export async function signIn({ email, password }: SignInParams) {
 }
 
 export async function signOut() {
+  removeStoredDeviceId()
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }

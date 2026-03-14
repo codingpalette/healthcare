@@ -6,8 +6,7 @@ import { signIn } from "@/features/auth/api"
 import { resolveEmail } from "@/shared/lib/resolve-email"
 import { Button } from "@/shared/ui/button"
 import { generateDeviceFingerprint, storeDeviceId } from "@/shared/lib/device-fingerprint"
-import { registerDevice, DeviceLimitError, type Device } from "@/entities/device"
-import { DeviceLimitScreen } from "@/features/device-management"
+import { registerDevice, DeviceLimitError, DeviceLimitScreen, type Device } from "@/entities/device"
 import { parseDeviceInfo } from "../api/auth-api"
 
 export function LoginForm() {

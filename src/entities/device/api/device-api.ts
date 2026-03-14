@@ -56,14 +56,15 @@ export async function registerDevice(input: RegisterDeviceRequest): Promise<Devi
     },
     body: JSON.stringify({
       ...input,
-      sessionId: session.user?.app_metadata?.session_id ?? null,
+      // Supabase 클라이언트에서 session_id 접근 불가 — 서버사이드에서 처리 필요
     }),
   })
 
   if (!res.ok) {
     const err = await res.json()
     if (err.code === "DEVICE_LIMIT_EXCEEDED") {
-      throw new DeviceLimitError(err.devices ?? [])
+      const devices = (err.devices ?? []).map(toDevice)
+      throw new DeviceLimitError(devices)
     }
     throw new Error(err.error ?? "기기 등록 실패")
   }

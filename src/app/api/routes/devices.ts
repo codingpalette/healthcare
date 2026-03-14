@@ -32,6 +32,12 @@ devicesRoutes.post("/", async (c) => {
     sessionId?: string
   }>()
 
+  // 요청 유효성 검사
+  const validTypes = ["mobile", "tablet", "desktop"]
+  if (!body.deviceFingerprint || !body.deviceName || !body.browser || !body.os || !validTypes.includes(body.deviceType)) {
+    return c.json({ error: "잘못된 요청입니다" }, 400)
+  }
+
   // 같은 fingerprint의 기존 기기가 있으면 갱신
   const { data: existing } = await supabase
     .from("user_devices")
@@ -120,11 +126,14 @@ devicesRoutes.delete("/:id", async (c) => {
 
   // Supabase Admin으로 세션 무효화 (auth.sessions에서 직접 삭제)
   if (device.session_id) {
-    await adminSupabase
+    const { error: sessionError } = await adminSupabase
       .schema("auth")
       .from("sessions")
       .delete()
       .eq("id", device.session_id)
+    if (sessionError) {
+      console.error("세션 무효화 실패:", sessionError.message)
+    }
   }
 
   const { error } = await supabase
@@ -180,11 +189,14 @@ devicesRoutes.delete("/members/:userId/:deviceId", async (c) => {
   }
 
   if (device.session_id) {
-    await adminSupabase
+    const { error: sessionError } = await adminSupabase
       .schema("auth")
       .from("sessions")
       .delete()
       .eq("id", device.session_id)
+    if (sessionError) {
+      console.error("세션 무효화 실패:", sessionError.message)
+    }
   }
 
   const { error } = await supabase

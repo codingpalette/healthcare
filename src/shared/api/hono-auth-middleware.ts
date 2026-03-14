@@ -57,6 +57,9 @@ export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
     const lastUpdate = lastActivityUpdate.get(cacheKey) ?? 0
 
     if (now - lastUpdate > ACTIVITY_THROTTLE_MS) {
+      if (lastActivityUpdate.size > 10000) {
+        lastActivityUpdate.clear()
+      }
       lastActivityUpdate.set(cacheKey, now)
       // 비동기로 갱신 (응답 지연 방지)
       supabase

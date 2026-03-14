@@ -7,3 +7,4 @@ export {
   DeviceLimitError,
 } from "./api/device-api"
 export type { Device, DeviceType, RegisterDeviceRequest } from "./model/types"
+export { DeviceLimitScreen } from "./ui/device-limit-screen"

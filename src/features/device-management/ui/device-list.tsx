@@ -1,34 +1,14 @@
 "use client"
 
-import { Monitor, Smartphone, Tablet, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { Button } from "@/shared/ui/button"
 import { Badge } from "@/shared/ui/badge"
+import { DeviceIcon } from "@/shared/ui/device-icon"
+import { formatRelativeTime } from "@/shared/lib/format-relative-time"
 import { getStoredDeviceId } from "@/shared/lib/device-fingerprint"
 import { useMyDevices, useRemoveMyDevice } from "../model/use-devices"
 import type { Device } from "@/entities/device"
-
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const minutes = Math.floor(diff / 60000)
-  if (minutes < 1) return "방금 전"
-  if (minutes < 60) return `${minutes}분 전`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}시간 전`
-  const days = Math.floor(hours / 24)
-  return `${days}일 전`
-}
-
-function DeviceIcon({ type }: { type: Device["deviceType"] }) {
-  switch (type) {
-    case "mobile":
-      return <Smartphone className="h-8 w-8 text-muted-foreground" />
-    case "tablet":
-      return <Tablet className="h-8 w-8 text-muted-foreground" />
-    default:
-      return <Monitor className="h-8 w-8 text-muted-foreground" />
-  }
-}
 
 interface DeviceCardProps {
   device: Device
