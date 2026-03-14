@@ -31,7 +31,6 @@ function formatMeasureDate(value: string) {
     year: "numeric",
     month: "long",
     day: "numeric",
-    weekday: "short",
   })
 }
 
