@@ -113,6 +113,7 @@ export {
   DialogTitle,
   DialogDescription,
 } from "./dialog"
+export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants } from "./tabs"
 export {
   AlertDialog,
   AlertDialogAction,

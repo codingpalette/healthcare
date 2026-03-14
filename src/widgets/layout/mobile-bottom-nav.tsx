@@ -19,7 +19,7 @@ export function MobileBottomNav({ profile }: MobileBottomNavProps) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/96 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur md:hidden">
-      <div className="mx-auto grid max-w-xl grid-cols-6 gap-1">
+      <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
         {navItems.map((item) => {
           const isActive = isNavItemActive(pathname, item.href)
 

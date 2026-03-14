@@ -3,13 +3,11 @@
 import type { LucideIcon } from "lucide-react"
 import {
   CalendarCheck,
-  Dumbbell,
+  ClipboardList,
   LayoutDashboard,
   MessageCircle,
   MessagesSquare,
-  Scale,
   Users,
-  UtensilsCrossed,
   Wrench,
 } from "lucide-react"
 import type { Profile } from "@/entities/user"
@@ -23,36 +21,29 @@ export type NavigationItem = {
 const commonNav: NavigationItem[] = [
   { title: "대시보드", href: "/", icon: LayoutDashboard },
   { title: "출석", href: "/attendance", icon: CalendarCheck },
-  { title: "인바디", href: "/inbody", icon: Scale },
+  { title: "기록", href: "/records", icon: ClipboardList },
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
   { title: "Q&A", href: "/qna", icon: MessageCircle },
   { title: "기구 가이드", href: "/equipment", icon: Wrench },
 ]
 
 const trainerNav: NavigationItem[] = [
-  { title: "식단", href: "/diet", icon: UtensilsCrossed },
-  { title: "운동", href: "/workout", icon: Dumbbell },
   { title: "회원 관리", href: "/members", icon: Users },
 ]
 
-const memberNav: NavigationItem[] = [
-  { title: "식단", href: "/diet", icon: UtensilsCrossed },
-  { title: "운동", href: "/workout", icon: Dumbbell },
-]
+const memberNav: NavigationItem[] = []
 
 const memberPrimaryNav: NavigationItem[] = [
   { title: "홈", href: "/", icon: LayoutDashboard },
   { title: "출석", href: "/attendance", icon: CalendarCheck },
-  { title: "식단", href: "/diet", icon: UtensilsCrossed },
-  { title: "운동", href: "/workout", icon: Dumbbell },
+  { title: "기록", href: "/records", icon: ClipboardList },
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
 ]
 
 const trainerPrimaryNav: NavigationItem[] = [
   { title: "홈", href: "/", icon: LayoutDashboard },
   { title: "회원", href: "/members", icon: Users },
-  { title: "식단", href: "/diet", icon: UtensilsCrossed },
-  { title: "운동", href: "/workout", icon: Dumbbell },
+  { title: "기록", href: "/records", icon: ClipboardList },
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
 ]
 
