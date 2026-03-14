@@ -34,6 +34,7 @@ interface MemberListTableProps {
   currentUserId: string
   onAdd: () => void
   onEdit: (member: Profile) => void
+  onViewDevices?: (member: Profile) => void
 }
 
 interface ConfirmAction {
@@ -44,7 +45,7 @@ interface ConfirmAction {
   onConfirm: () => void
 }
 
-export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTableProps) {
+export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices }: MemberListTableProps) {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer" | "mine">("all")
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -235,6 +236,16 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
                     >
                       수정
                     </DropdownMenuItem>
+                    {onViewDevices && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onViewDevices(member)
+                        }}
+                      >
+                        기기 조회
+                      </DropdownMenuItem>
+                    )}
                     {member.id !== currentUserId && (
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -334,6 +345,16 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
                         >
                           수정
                         </DropdownMenuItem>
+                        {onViewDevices && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onViewDevices(member)
+                            }}
+                          >
+                            기기 조회
+                          </DropdownMenuItem>
+                        )}
                         {member.id !== currentUserId && (
                           <DropdownMenuItem
                             onClick={(e) => {

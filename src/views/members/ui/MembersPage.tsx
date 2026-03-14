@@ -3,6 +3,8 @@
 import { useState } from "react"
 import type { Profile } from "@/entities/user"
 import { AddMemberForm, EditMemberForm } from "@/features/member-management"
+import { MemberDeviceList } from "@/features/device-management"
+import { useMemberDevices, useRemoveMemberDevice } from "@/features/device-management"
 import { MemberListTable } from "@/widgets/member"
 import {
   Card,
@@ -18,9 +20,26 @@ interface MembersPageProps {
   currentUserId: string
 }
 
+/** 회원 기기 목록 래퍼 컴포넌트 */
+function MemberDeviceListWrapper({ userId }: { userId: string }) {
+  const { data: devices, isLoading } = useMemberDevices(userId)
+  const removeDevice = useRemoveMemberDevice()
+
+  return (
+    <MemberDeviceList
+      userId={userId}
+      devices={devices ?? []}
+      isLoading={isLoading}
+      onRemove={(deviceId) => removeDevice.mutate({ userId, deviceId })}
+      isRemoving={removeDevice.isPending}
+    />
+  )
+}
+
 export function MembersPage({ currentUserId }: MembersPageProps) {
   const [addOpen, setAddOpen] = useState(false)
   const [editMember, setEditMember] = useState<Profile | null>(null)
+  const [deviceMember, setDeviceMember] = useState<Profile | null>(null)
 
   return (
     <div className="space-y-6">
@@ -37,6 +56,7 @@ export function MembersPage({ currentUserId }: MembersPageProps) {
             currentUserId={currentUserId}
             onAdd={() => setAddOpen(true)}
             onEdit={(member) => setEditMember(member)}
+            onViewDevices={(member) => setDeviceMember(member)}
           />
         </CardContent>
       </Card>
@@ -69,6 +89,18 @@ export function MembersPage({ currentUserId }: MembersPageProps) {
               currentUserId={currentUserId}
               onSuccess={() => setEditMember(null)}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 회원 기기 조회 다이얼로그 */}
+      <Dialog open={!!deviceMember} onOpenChange={(open) => !open && setDeviceMember(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{deviceMember?.name}님의 접속 기기</DialogTitle>
+          </DialogHeader>
+          {deviceMember && (
+            <MemberDeviceListWrapper userId={deviceMember.id} />
           )}
         </DialogContent>
       </Dialog>
