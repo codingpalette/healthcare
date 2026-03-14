@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabase"
+import { fetchWithDevice } from "@/shared/api/fetch-with-device"
 import type { Device, RegisterDeviceRequest } from "../model/types"
 
 function toDevice(row: Record<string, unknown>): Device {
@@ -29,7 +30,7 @@ export async function getMyDevices(): Promise<Device[]> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증이 필요합니다")
 
-  const res = await fetch("/api/devices", {
+  const res = await fetchWithDevice("/api/devices", {
     headers: { Authorization: `Bearer ${session.access_token}` },
   })
 
@@ -47,7 +48,7 @@ export async function registerDevice(input: RegisterDeviceRequest): Promise<Devi
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증이 필요합니다")
 
-  const res = await fetch("/api/devices", {
+  const res = await fetchWithDevice("/api/devices", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -76,7 +77,7 @@ export async function removeMyDevice(deviceId: string): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증이 필요합니다")
 
-  const res = await fetch(`/api/devices/${deviceId}`, {
+  const res = await fetchWithDevice(`/api/devices/${deviceId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${session.access_token}` },
   })
@@ -92,7 +93,7 @@ export async function getMemberDevices(userId: string): Promise<Device[]> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증이 필요합니다")
 
-  const res = await fetch(`/api/devices/members/${userId}`, {
+  const res = await fetchWithDevice(`/api/devices/members/${userId}`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
   })
 
@@ -110,7 +111,7 @@ export async function removeMemberDevice(userId: string, deviceId: string): Prom
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("인증이 필요합니다")
 
-  const res = await fetch(`/api/devices/members/${userId}/${deviceId}`, {
+  const res = await fetchWithDevice(`/api/devices/members/${userId}/${deviceId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${session.access_token}` },
   })
