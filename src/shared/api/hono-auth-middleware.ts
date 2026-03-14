@@ -9,6 +9,10 @@ export type AuthEnv = {
   }
 }
 
+// 활동 추적 throttle (5분)
+const ACTIVITY_THROTTLE_MS = 5 * 60 * 1000
+const lastActivityUpdate = new Map<string, number>()
+
 export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
   const authorization = c.req.header("Authorization")
 
@@ -44,6 +48,25 @@ export const authMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
 
   c.set("userId", user.id)
   c.set("userRole", profile?.role ?? "member")
+
+  // 활동 추적 (X-Device-Id 헤더가 있을 때만)
+  const deviceId = c.req.header("X-Device-Id")
+  if (deviceId) {
+    const cacheKey = `${user.id}:${deviceId}`
+    const now = Date.now()
+    const lastUpdate = lastActivityUpdate.get(cacheKey) ?? 0
+
+    if (now - lastUpdate > ACTIVITY_THROTTLE_MS) {
+      lastActivityUpdate.set(cacheKey, now)
+      // 비동기로 갱신 (응답 지연 방지)
+      supabase
+        .from("user_devices")
+        .update({ last_active_at: new Date().toISOString() })
+        .eq("id", deviceId)
+        .eq("user_id", user.id)
+        .then(() => {})
+    }
+  }
 
   await next()
 })

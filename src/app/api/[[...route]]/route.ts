@@ -4,6 +4,7 @@ import { attendanceRoutes } from "@/app/api/routes/attendance"
 import { chatRoutes } from "@/app/api/routes/chat"
 import { dietRoutes } from "@/app/api/routes/diet"
 import { inbodyRoutes } from "@/app/api/routes/inbody"
+import { devicesRoutes } from "@/app/api/routes/devices"
 import { notificationsRoutes } from "@/app/api/routes/notifications"
 import { profilesRoutes } from "@/app/api/routes/profiles"
 import { workoutRoutes } from "@/app/api/routes/workout"
@@ -21,6 +22,7 @@ app.route("/diet", dietRoutes)
 app.route("/workout", workoutRoutes)
 app.route("/chat", chatRoutes)
 app.route("/notifications", notificationsRoutes)
+app.route("/devices", devicesRoutes)
 
 export const GET = handle(app)
 export const POST = handle(app)
