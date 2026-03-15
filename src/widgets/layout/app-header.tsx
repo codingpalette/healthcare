@@ -22,6 +22,7 @@ const pageTitles: Record<string, string> = {
   "/settings": "설정",
   "/qna": "Q&A",
   "/equipment": "기구 가이드",
+  "/food-items": "음식 DB 관리",
 }
 
 export function AppHeader() {

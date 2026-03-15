@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   MessagesSquare,
+  Utensils,
   Users,
   Wrench,
 } from "lucide-react"
@@ -29,6 +30,7 @@ const commonNav: NavigationItem[] = [
 
 const trainerNav: NavigationItem[] = [
   { title: "회원 관리", href: "/members", icon: Users },
+  { title: "음식 DB 관리", href: "/food-items", icon: Utensils },
 ]
 
 const memberNav: NavigationItem[] = []

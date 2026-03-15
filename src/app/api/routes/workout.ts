@@ -62,21 +62,33 @@ workoutRoutes.post("/batch", async (c) => {
 
   // 각 운동을 workouts 테이블에 개별 row로 insert
   const insertRows = validExercises.map((ex) => {
-    // 첫 번째 세트 기준으로 weight/reps 저장
-    const firstSet = ex.sets?.[0]
-    // 전체 세트 정보를 JSON 문자열로 notes에 저장 (기존 notes가 있으면 앞에 추가)
-    const setsJson = JSON.stringify(ex.sets)
-    const notesValue = ex.notes
-      ? `${ex.notes}\n세트정보: ${setsJson}`
-      : `세트정보: ${setsJson}`
+    // 유효한 세트만 필터링 (kg 또는 reps가 있는 세트)
+    const validSets = (ex.sets ?? []).filter((s) => s.kg != null || s.reps != null)
+    const setCount = validSets.length || 1
+
+    // 총 reps, 최대 weight 계산
+    const totalReps = validSets.reduce((sum, s) => sum + (s.reps ?? 0), 0)
+    const maxWeight = validSets.reduce((max, s) => Math.max(max, s.kg ?? 0), 0)
+
+    // 세트 정보를 읽기 좋은 텍스트로 변환
+    const setsText = validSets
+      .map((s, i) => {
+        const parts: string[] = []
+        if (s.kg != null) parts.push(`${s.kg}kg`)
+        if (s.reps != null) parts.push(`${s.reps}회`)
+        return `${i + 1}세트: ${parts.join(" × ") || "-"}`
+      })
+      .join("\n")
+
+    const notesValue = [ex.notes, setsText].filter(Boolean).join("\n")
 
     return {
       user_id: userId,
       exercise_name: ex.exerciseName.trim(),
-      sets: ex.sets?.length ?? null,
-      reps: firstSet?.reps ?? null,
-      weight: firstSet?.kg ?? null,
-      notes: notesValue,
+      sets: setCount,
+      reps: totalReps || null,
+      weight: maxWeight || null,
+      notes: notesValue || null,
       date: targetDate,
     }
   })
