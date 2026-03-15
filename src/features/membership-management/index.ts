@@ -6,4 +6,4 @@ export {
   useUpdateMembership,
   useDeleteMembership,
 } from "./model/use-memberships"
-export { MembershipForm } from "./ui/membership-form"
+export { MembershipSection } from "./ui/membership-form"

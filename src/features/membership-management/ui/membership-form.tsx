@@ -1,15 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ko } from "date-fns/locale"
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
 import { toast } from "sonner"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Calendar,
 } from "@/shared/ui"
-import { Button, Input, Label } from "@/shared/ui"
+import { Button, Label } from "@/shared/ui"
+import { cn } from "@/shared/lib/utils"
 import {
   useMemberMembership,
   useCreateMembership,
@@ -17,21 +20,20 @@ import {
   useDeleteMembership,
 } from "@/features/membership-management/model/use-memberships"
 
-interface MembershipFormProps {
+interface MembershipSectionProps {
   memberId: string
-  memberName: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
 }
 
-export function MembershipForm({ memberId, memberName, open, onOpenChange }: MembershipFormProps) {
+/**
+ * 회원권 관리 섹션 — EditMemberForm 내부에 임베드하여 사용
+ */
+export function MembershipSection({ memberId }: MembershipSectionProps) {
   const { data: membership, isLoading } = useMemberMembership(memberId)
 
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [memo, setMemo] = useState("")
 
-  // 기존 회원권 데이터로 폼 초기화
   useEffect(() => {
     if (membership) {
       setStartDate(membership.startDate)
@@ -51,9 +53,7 @@ export function MembershipForm({ memberId, memberName, open, onOpenChange }: Mem
   const isPending = isCreating || isUpdating || isDeleting
   const isEditMode = !!membership
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleMembershipSubmit = () => {
     if (!startDate) {
       toast.error("시작일을 입력해주세요")
       return
@@ -71,20 +71,11 @@ export function MembershipForm({ memberId, memberName, open, onOpenChange }: Mem
       updateMembership(
         {
           id: membership.id,
-          data: {
-            startDate,
-            endDate,
-            memo: memo.trim() || undefined,
-          },
+          data: { startDate, endDate, memo: memo.trim() || undefined },
         },
         {
-          onSuccess: () => {
-            toast.success("회원권이 수정되었습니다")
-            onOpenChange(false)
-          },
-          onError: (error) => {
-            toast.error(error.message)
-          },
+          onSuccess: () => toast.success("회원권이 수정되었습니다"),
+          onError: (error) => toast.error(error.message),
         }
       )
     } else {
@@ -96,13 +87,8 @@ export function MembershipForm({ memberId, memberName, open, onOpenChange }: Mem
           memo: memo.trim() || undefined,
         },
         {
-          onSuccess: () => {
-            toast.success("회원권이 등록되었습니다")
-            onOpenChange(false)
-          },
-          onError: (error) => {
-            toast.error(error.message)
-          },
+          onSuccess: () => toast.success("회원권이 등록되었습니다"),
+          onError: (error) => toast.error(error.message),
         }
       )
     }
@@ -111,87 +97,116 @@ export function MembershipForm({ memberId, memberName, open, onOpenChange }: Mem
   const handleDelete = () => {
     if (!membership) return
     deleteMembership(membership.id, {
-      onSuccess: () => {
-        toast.success("회원권이 삭제되었습니다")
-        onOpenChange(false)
-      },
-      onError: (error) => {
-        toast.error(error.message)
-      },
+      onSuccess: () => toast.success("회원권이 삭제되었습니다"),
+      onError: (error) => toast.error(error.message),
     })
   }
 
+  if (isLoading) {
+    return (
+      <div className="py-2 text-center text-sm text-muted-foreground">회원권 정보 로딩 중...</div>
+    )
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {memberName} 회원권 {isEditMode ? "수정" : "등록"}
-          </DialogTitle>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="py-4 text-center text-sm text-muted-foreground">로딩 중...</div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="membership-start-date">시작일</Label>
-              <Input
-                id="membership-start-date"
-                type="date"
-                value={startDate}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
-                required
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <Label>시작일</Label>
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "w-full justify-between font-normal",
+                  !startDate && "text-muted-foreground"
+                )}
               />
-            </div>
+            }
+          >
+            <span>{startDate ? format(new Date(startDate), "yyyy년 MM월 dd일") : "시작일을 선택하세요"}</span>
+            <CalendarIcon className="size-4" />
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3" align="start">
+            <Calendar
+              mode="single"
+              locale={ko}
+              selected={startDate ? new Date(startDate) : undefined}
+              onSelect={(date) => setStartDate(date ? format(date, "yyyy-MM-dd") : "")}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="membership-end-date">종료일</Label>
-              <Input
-                id="membership-end-date"
-                type="date"
-                value={endDate}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
-                required
+      <div className="space-y-2">
+        <Label>종료일</Label>
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "w-full justify-between font-normal",
+                  !endDate && "text-muted-foreground"
+                )}
               />
-            </div>
+            }
+          >
+            <span>{endDate ? format(new Date(endDate), "yyyy년 MM월 dd일") : "종료일을 선택하세요"}</span>
+            <CalendarIcon className="size-4" />
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3" align="start">
+            <Calendar
+              mode="single"
+              locale={ko}
+              selected={endDate ? new Date(endDate) : undefined}
+              onSelect={(date) => setEndDate(date ? format(date, "yyyy-MM-dd") : "")}
+              disabled={(date) => startDate ? date < new Date(startDate) : false}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="membership-memo">메모 (선택)</Label>
-              <textarea
-                id="membership-memo"
-                value={memo}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMemo(e.target.value)}
-                placeholder="메모를 입력하세요"
-                rows={3}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
+      <div className="space-y-2">
+        <Label htmlFor="membership-memo">메모 (선택)</Label>
+        <textarea
+          id="membership-memo"
+          value={memo}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMemo(e.target.value)}
+          placeholder="메모를 입력하세요"
+          rows={2}
+          className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        />
+      </div>
 
-            <DialogFooter className="gap-2">
-              {isEditMode && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={isPending}
-                >
-                  {isDeleting ? "삭제 중..." : "삭제"}
-                </Button>
-              )}
-              <Button type="submit" disabled={isPending}>
-                {isCreating || isUpdating
-                  ? isEditMode
-                    ? "수정 중..."
-                    : "등록 중..."
-                  : isEditMode
-                    ? "수정 완료"
-                    : "등록 완료"}
-              </Button>
-            </DialogFooter>
-          </form>
+      <div className="flex gap-2">
+        {isEditMode && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            disabled={isPending}
+          >
+            {isDeleting ? "삭제 중..." : "회원권 삭제"}
+          </Button>
         )}
-      </DialogContent>
-    </Dialog>
+        <Button
+          type="button"
+          size="sm"
+          onClick={handleMembershipSubmit}
+          disabled={isPending}
+          className="ml-auto"
+        >
+          {isCreating || isUpdating
+            ? "저장 중..."
+            : isEditMode
+              ? "회원권 수정"
+              : "회원권 등록"}
+        </Button>
+      </div>
+    </div>
   )
 }

@@ -1,21 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Plus, Search } from "lucide-react"
-import { toast } from "sonner"
+import { Plus, Search, Settings } from "lucide-react"
 import type { Profile } from "@/entities/user"
 import type { Membership } from "@/entities/membership"
-import { useMembers, useMyMembers, useAssignTrainer, useUnassignTrainer, useDeleteMember, useUpdateRole } from "@/features/member-management"
+import { useMembers, useMyMembers } from "@/features/member-management"
 import { useMemberships } from "@/features/membership-management"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   Badge,
   Button,
   Input,
@@ -26,51 +17,24 @@ import {
   TableHeader,
   TableRow,
   Skeleton,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
 } from "@/shared/ui"
 
 interface MemberListTableProps {
   currentUserId: string
   onAdd: () => void
   onEdit: (member: Profile) => void
-  onViewDevices?: (member: Profile) => void
-  onMembershipEdit?: (member: Profile) => void
 }
 
-interface ConfirmAction {
-  title: string
-  description: string
-  actionLabel: string
-  actionVariant?: "default" | "destructive"
-  onConfirm: () => void
-}
-
-export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices, onMembershipEdit }: MemberListTableProps) {
+export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTableProps) {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer" | "mine">("all")
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const { data: members, isLoading } = useMembers()
   const { data: myMembers } = useMyMembers()
   const { data: memberships } = useMemberships()
 
-  // memberId -> Membership 맵
   const membershipMap = new Map<string, Membership>(
     (memberships ?? []).map((m) => [m.memberId, m])
   )
-  const deleteMember = useDeleteMember()
-  const changeRole = useUpdateRole()
-  const assign = useAssignTrainer()
-  const unassign = useUnassignTrainer()
-
-  const myMemberIds = new Set((myMembers ?? []).map((m) => m.id))
-  const isConfirmPending =
-    deleteMember.isPending ||
-    changeRole.isPending ||
-    assign.isPending ||
-    unassign.isPending
 
   const filtered = (roleFilter === "mine" ? (myMembers ?? []) : (members ?? [])).filter((m) => {
     if (roleFilter !== "all" && roleFilter !== "mine" && m.role !== roleFilter) return false
@@ -81,71 +45,6 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices, o
       (m.phone?.toLowerCase().includes(q) ?? false)
     )
   })
-
-  const handleRoleChange = (member: Profile) => {
-    const newRole = member.role === "member" ? "trainer" : "member"
-    const label = newRole === "trainer" ? "트레이너" : "회원"
-    setConfirmAction({
-      title: `${member.name}님의 권한을 ${label}(으)로 변경하시겠습니까?`,
-      description: "권한 변경은 즉시 적용됩니다.",
-      actionLabel: "권한 변경",
-      onConfirm: () => {
-        changeRole.mutate(
-          { memberId: member.id, data: { role: newRole } },
-          {
-            onSuccess: () => toast.success(`${member.name}님의 권한이 ${label}(으)로 변경되었습니다`),
-            onError: (err) => toast.error(err.message),
-          }
-        )
-      },
-    })
-  }
-
-  const handleAssign = (member: Profile) => {
-    setConfirmAction({
-      title: `${member.name}님을 내 회원으로 등록하시겠습니까?`,
-      description: "등록 후 트레이너-회원 연결이 즉시 반영됩니다.",
-      actionLabel: "등록",
-      onConfirm: () => {
-        assign.mutate(
-          { memberId: member.id, trainerId: currentUserId },
-          {
-            onSuccess: () => toast.success(`${member.name}님이 내 회원으로 등록되었습니다`),
-            onError: (err) => toast.error(err.message),
-          }
-        )
-      },
-    })
-  }
-
-  const handleUnassign = (member: Profile) => {
-    setConfirmAction({
-      title: `${member.name}님을 내 회원에서 해제하시겠습니까?`,
-      description: "해제 후에는 내 회원 목록에서 바로 제외됩니다.",
-      actionLabel: "해제",
-      onConfirm: () => {
-        unassign.mutate(member.id, {
-          onSuccess: () => toast.success(`${member.name}님이 내 회원에서 해제되었습니다`),
-          onError: (err) => toast.error(err.message),
-        })
-      },
-    })
-  }
-
-  const handleDelete = (member: Profile) => {
-    setConfirmAction({
-      title: `${member.name} 유저를 삭제하시겠습니까?`,
-      description: "삭제된 유저는 복구할 수 없습니다.",
-      actionLabel: "삭제",
-      actionVariant: "destructive",
-      onConfirm: () => {
-        deleteMember.mutate(member.id, {
-          onSuccess: () => toast.success("유저가 삭제되었습니다"),
-          onError: (err) => toast.error(err.message),
-        })
-      },
-    })
-  }
 
   const formatEmail = (email: string | null) => {
     if (!email) return "-"
@@ -242,92 +141,19 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices, o
                   <Badge variant={member.role === "trainer" ? "default" : "secondary"}>
                     {member.role === "trainer" ? "트레이너" : "회원"}
                   </Badge>
+                  {member.role === "member" && getMembershipBadge(member.id)}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="size-8 p-0"
-                        aria-label="회원 작업 메뉴"
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <MoreHorizontal className="size-4" />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEdit(member)
-                      }}
-                    >
-                      수정
-                    </DropdownMenuItem>
-                    {onMembershipEdit && (
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onMembershipEdit(member)
-                        }}
-                      >
-                        회원권
-                      </DropdownMenuItem>
-                    )}
-                    {onViewDevices && (
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onViewDevices(member)
-                        }}
-                      >
-                        기기 조회
-                      </DropdownMenuItem>
-                    )}
-                    {member.id !== currentUserId && (
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRoleChange(member)
-                        }}
-                      >
-                        {member.role === "member" ? "트레이너로 변경" : "회원으로 변경"}
-                      </DropdownMenuItem>
-                    )}
-                    {member.role === "member" && member.id !== currentUserId && (
-                      myMemberIds.has(member.id) ? (
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleUnassign(member)
-                          }}
-                        >
-                          내 회원에서 해제
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAssign(member)
-                          }}
-                        >
-                          내 회원으로 등록
-                        </DropdownMenuItem>
-                      )
-                    )}
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(member)
-                      }}
-                    >
-                      삭제
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="size-8 p-0"
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation()
+                    onEdit(member)
+                  }}
+                >
+                  <Settings className="size-4" />
+                </Button>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
                 {member.phone ?? "-"}
@@ -364,91 +190,17 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices, o
                   <TableCell>{member.phone ?? "-"}</TableCell>
                   <TableCell>{formatDate(member.createdAt)}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="size-8 p-0"
-                            aria-label="회원 작업 메뉴"
-                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onEdit(member)
-                          }}
-                        >
-                          수정
-                        </DropdownMenuItem>
-                        {onMembershipEdit && (
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onMembershipEdit(member)
-                            }}
-                          >
-                            회원권
-                          </DropdownMenuItem>
-                        )}
-                        {onViewDevices && (
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onViewDevices(member)
-                            }}
-                          >
-                            기기 조회
-                          </DropdownMenuItem>
-                        )}
-                        {member.id !== currentUserId && (
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRoleChange(member)
-                            }}
-                          >
-                            {member.role === "member" ? "트레이너로 변경" : "회원으로 변경"}
-                          </DropdownMenuItem>
-                        )}
-                        {member.role === "member" && member.id !== currentUserId && (
-                          myMemberIds.has(member.id) ? (
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleUnassign(member)
-                              }}
-                            >
-                              내 회원에서 해제
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleAssign(member)
-                              }}
-                            >
-                              내 회원으로 등록
-                            </DropdownMenuItem>
-                          )
-                        )}
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDelete(member)
-                          }}
-                        >
-                          삭제
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="size-8 p-0"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation()
+                        onEdit(member)
+                      }}
+                    >
+                      <Settings className="size-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -457,30 +209,6 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices, o
         </div>
         </>
       )}
-
-      <AlertDialog
-        open={!!confirmAction}
-        onOpenChange={(open) => {
-          if (!open) setConfirmAction(null)
-        }}
-      >
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{confirmAction?.title}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmAction?.description}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isConfirmPending}>취소</AlertDialogCancel>
-            <AlertDialogAction
-              variant={confirmAction?.actionVariant ?? "default"}
-              disabled={isConfirmPending}
-              onClick={() => confirmAction?.onConfirm()}
-            >
-              {confirmAction?.actionLabel ?? "확인"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
