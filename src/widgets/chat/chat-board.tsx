@@ -202,7 +202,7 @@ function MessageBubble({
   const isFeedback = message.messageType === "feedback"
   const isShare =
     message.messageType === "meal_share" || message.messageType === "workout_share"
-  const hasAttachment = !!message.attachmentPayload
+  const hasAttachment = !!message.attachmentPayload && Object.keys(message.attachmentPayload).length > 0
 
   return (
     <div className={cn("flex gap-3", isMine && "justify-end")}>
@@ -222,7 +222,7 @@ function MessageBubble({
             isFeedback || isShare
               ? "border border-primary/15 bg-linear-to-br from-primary/6 via-background to-background text-foreground"
               : isMine
-                ? "bg-primary text-primary-foreground"
+                ? "bg-muted text-foreground"
                 : "bg-card text-card-foreground",
             (isFeedback || isShare) && hasAttachment && "px-3 py-3"
           )}
@@ -233,7 +233,7 @@ function MessageBubble({
             </Badge>
           )}
           {message.content && <p className="whitespace-pre-wrap break-words">{message.content}</p>}
-          {message.attachmentPayload && (
+          {hasAttachment && (
             <MessageAttachmentCard type={message.messageType} payload={message.attachmentPayload} />
           )}
         </div>
