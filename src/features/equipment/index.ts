@@ -1,1 +1,7 @@
-// Equipment feature
+export {
+  useCreateEquipment,
+  useDeleteEquipment,
+  useEquipmentDetail,
+  useEquipmentList,
+  useUpdateEquipment,
+} from "./model"

@@ -1,1 +1,1 @@
-// Equipment page composition
+export { EquipmentPage } from "./ui/EquipmentPage"

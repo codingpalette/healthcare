@@ -7,6 +7,7 @@ import { inbodyRoutes } from "@/app/api/routes/inbody"
 import { devicesRoutes } from "@/app/api/routes/devices"
 import { notificationsRoutes } from "@/app/api/routes/notifications"
 import { profilesRoutes } from "@/app/api/routes/profiles"
+import { equipmentRoutes } from "@/app/api/routes/equipment"
 import { workoutRoutes } from "@/app/api/routes/workout"
 
 const app = new Hono().basePath("/api")
@@ -21,6 +22,7 @@ app.route("/inbody", inbodyRoutes)
 app.route("/diet", dietRoutes)
 app.route("/workout", workoutRoutes)
 app.route("/chat", chatRoutes)
+app.route("/equipment", equipmentRoutes)
 app.route("/notifications", notificationsRoutes)
 app.route("/devices", devicesRoutes)
 

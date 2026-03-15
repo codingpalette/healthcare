@@ -1,1 +1,7 @@
-// Equipment entity API
+export {
+  createEquipment,
+  deleteEquipment,
+  getEquipmentDetail,
+  getEquipmentList,
+  updateEquipment,
+} from "./equipment-api"
