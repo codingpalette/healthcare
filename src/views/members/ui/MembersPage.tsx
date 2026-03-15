@@ -5,6 +5,7 @@ import type { Profile } from "@/entities/user"
 import { AddMemberForm, EditMemberForm } from "@/features/member-management"
 import { MemberDeviceList } from "@/features/device-management"
 import { useMemberDevices, useRemoveMemberDevice } from "@/features/device-management"
+import { MembershipForm } from "@/features/membership-management"
 import { MemberListTable } from "@/widgets/member"
 import {
   Card,
@@ -40,6 +41,8 @@ export function MembersPage({ currentUserId }: MembersPageProps) {
   const [addOpen, setAddOpen] = useState(false)
   const [editMember, setEditMember] = useState<Profile | null>(null)
   const [deviceMember, setDeviceMember] = useState<Profile | null>(null)
+  const [membershipTarget, setMembershipTarget] = useState<Profile | null>(null)
+  const [membershipDialogOpen, setMembershipDialogOpen] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -57,6 +60,10 @@ export function MembersPage({ currentUserId }: MembersPageProps) {
             onAdd={() => setAddOpen(true)}
             onEdit={(member) => setEditMember(member)}
             onViewDevices={(member) => setDeviceMember(member)}
+            onMembershipEdit={(member) => {
+              setMembershipTarget(member)
+              setMembershipDialogOpen(true)
+            }}
           />
         </CardContent>
       </Card>
@@ -92,6 +99,19 @@ export function MembersPage({ currentUserId }: MembersPageProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* 회원권 설정 다이얼로그 */}
+      {membershipTarget && (
+        <MembershipForm
+          memberId={membershipTarget.id}
+          memberName={membershipTarget.name}
+          open={membershipDialogOpen}
+          onOpenChange={(open) => {
+            setMembershipDialogOpen(open)
+            if (!open) setMembershipTarget(null)
+          }}
+        />
+      )}
 
       {/* 회원 기기 조회 다이얼로그 */}
       <Dialog open={!!deviceMember} onOpenChange={(open) => !open && setDeviceMember(null)}>

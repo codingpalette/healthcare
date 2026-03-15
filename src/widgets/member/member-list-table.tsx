@@ -4,7 +4,9 @@ import { useState } from "react"
 import { MoreHorizontal, Plus, Search } from "lucide-react"
 import { toast } from "sonner"
 import type { Profile } from "@/entities/user"
+import type { Membership } from "@/entities/membership"
 import { useMembers, useMyMembers, useAssignTrainer, useUnassignTrainer, useDeleteMember, useUpdateRole } from "@/features/member-management"
+import { useMemberships } from "@/features/membership-management"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +37,7 @@ interface MemberListTableProps {
   onAdd: () => void
   onEdit: (member: Profile) => void
   onViewDevices?: (member: Profile) => void
+  onMembershipEdit?: (member: Profile) => void
 }
 
 interface ConfirmAction {
@@ -45,12 +48,18 @@ interface ConfirmAction {
   onConfirm: () => void
 }
 
-export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices }: MemberListTableProps) {
+export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices, onMembershipEdit }: MemberListTableProps) {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer" | "mine">("all")
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const { data: members, isLoading } = useMembers()
   const { data: myMembers } = useMyMembers()
+  const { data: memberships } = useMemberships()
+
+  // memberId -> Membership 맵
+  const membershipMap = new Map<string, Membership>(
+    (memberships ?? []).map((m) => [m.memberId, m])
+  )
   const deleteMember = useDeleteMember()
   const changeRole = useUpdateRole()
   const assign = useAssignTrainer()
@@ -146,6 +155,27 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices }:
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString("ko-KR")
 
+  const getMembershipBadge = (memberId: string) => {
+    const membership = membershipMap.get(memberId)
+    if (!membership) {
+      return <Badge variant="outline" className="text-muted-foreground">미설정</Badge>
+    }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const endDate = new Date(membership.endDate)
+    endDate.setHours(0, 0, 0, 0)
+    if (endDate >= today) {
+      const diffMs = endDate.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+      return (
+        <Badge variant="default" className="bg-green-600 text-white">
+          활성 D-{diffDays}
+        </Badge>
+      )
+    }
+    return <Badge variant="destructive">만료</Badge>
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -236,6 +266,16 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices }:
                     >
                       수정
                     </DropdownMenuItem>
+                    {onMembershipEdit && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onMembershipEdit(member)
+                        }}
+                      >
+                        회원권
+                      </DropdownMenuItem>
+                    )}
                     {onViewDevices && (
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -304,6 +344,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices }:
                 <TableHead>이름</TableHead>
                 <TableHead>아이디</TableHead>
                 <TableHead>권한</TableHead>
+                <TableHead>회원권</TableHead>
                 <TableHead>전화번호</TableHead>
                 <TableHead>가입일</TableHead>
                 <TableHead className="w-[50px]" />
@@ -319,6 +360,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices }:
                   <TableCell className="font-medium">{member.name}</TableCell>
                   <TableCell>{formatEmail(member.email)}</TableCell>
                   <TableCell>{member.role === "trainer" ? "트레이너" : "회원"}</TableCell>
+                  <TableCell>{getMembershipBadge(member.id)}</TableCell>
                   <TableCell>{member.phone ?? "-"}</TableCell>
                   <TableCell>{formatDate(member.createdAt)}</TableCell>
                   <TableCell>
@@ -345,6 +387,16 @@ export function MemberListTable({ currentUserId, onAdd, onEdit, onViewDevices }:
                         >
                           수정
                         </DropdownMenuItem>
+                        {onMembershipEdit && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onMembershipEdit(member)
+                            }}
+                          >
+                            회원권
+                          </DropdownMenuItem>
+                        )}
                         {onViewDevices && (
                           <DropdownMenuItem
                             onClick={(e) => {
