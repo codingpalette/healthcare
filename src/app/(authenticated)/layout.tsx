@@ -64,6 +64,22 @@ export default async function AuthenticatedLayout({
         deletedAt: null,
       }
 
+  // 회원권 만료 체크 (회원만)
+  if (profile.role === "member") {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("end_date")
+      .eq("member_id", user.id)
+      .maybeSingle()
+
+    const today = new Date().toISOString().split("T")[0]
+    const isExpired = !membership || (membership.end_date as string) < today
+
+    if (isExpired) {
+      redirect("/membership-expired")
+    }
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar profile={profile} />
