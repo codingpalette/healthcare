@@ -185,6 +185,94 @@ async function syncTrainerNotifications(
   }
 }
 
+async function syncMembershipExpiryNotifications(
+  adminSupabase: ReturnType<typeof createAdminSupabase>,
+  userId: string,
+  userRole: string,
+  pushEnabled: boolean
+) {
+  if (userRole === "member") {
+    // 회원 자기 회원권 만료 알림
+    const { data: membership } = await adminSupabase
+      .from("memberships")
+      .select("id, member_id, end_date")
+      .eq("member_id", userId)
+      .maybeSingle()
+
+    if (!membership) return
+
+    const today = new Date()
+    const endDate = new Date(membership.end_date as string)
+    const diffDays = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    for (const threshold of [7, 3, 1]) {
+      if (diffDays <= threshold && diffDays > 0) {
+        await createNotificationIfNeeded(
+          adminSupabase,
+          {
+            recipientId: userId,
+            kind: "membership_expiry",
+            title: `회원권이 ${diffDays}일 후 만료됩니다`,
+            message: `회원권 종료일: ${membership.end_date}. 연장이 필요하면 트레이너에게 문의하세요.`,
+            link: "/settings",
+            metadata: { endDate: membership.end_date, daysRemaining: diffDays },
+            dedupeKey: `membership_expiry:${userId}:${membership.end_date}:${threshold}`,
+          },
+          pushEnabled
+        )
+      }
+    }
+  }
+
+  if (userRole === "trainer") {
+    // 트레이너에게 회원 만료 알림
+    const { data: members } = await adminSupabase
+      .from("profiles")
+      .select("id, name")
+      .eq("trainer_id", userId)
+      .eq("role", "member")
+      .is("deleted_at", null)
+
+    if (!members?.length) return
+
+    const memberIds = members.map((m) => m.id as string)
+    const memberNameMap = new Map(members.map((m) => [m.id as string, m.name as string]))
+
+    const { data: memberships } = await adminSupabase
+      .from("memberships")
+      .select("member_id, end_date")
+      .in("member_id", memberIds)
+
+    if (!memberships?.length) return
+
+    const today = new Date()
+    for (const ms of memberships) {
+      const endDate = new Date(ms.end_date as string)
+      const diffDays = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      const memberId = ms.member_id as string
+
+      for (const threshold of [7, 3, 1]) {
+        if (diffDays <= threshold && diffDays > 0) {
+          await createNotificationIfNeeded(
+            adminSupabase,
+            {
+              recipientId: userId,
+              actorId: memberId,
+              kind: "membership_expiry",
+              title: `${memberNameMap.get(memberId) ?? "회원"}님의 회원권이 ${diffDays}일 후 만료됩니다`,
+              message: `회원권 종료일: ${ms.end_date}. 연장이 필요합니다.`,
+              link: "/members",
+              metadata: { memberId, endDate: ms.end_date, daysRemaining: diffDays },
+              dedupeKey: `membership_expiry:trainer:${memberId}:${ms.end_date}:${threshold}`,
+            },
+            pushEnabled
+          )
+        }
+      }
+    }
+  }
+}
+
 notificationsRoutes.post("/sync", async (c) => {
   const userId = c.get("userId")
   const userRole = c.get("userRole")
@@ -203,6 +291,11 @@ notificationsRoutes.post("/sync", async (c) => {
         attendanceEnabled: Boolean(preferences.attendance_enabled),
         pushEnabled: Boolean(preferences.push_enabled),
       })
+    }
+
+    // 회원권 만료 알림
+    if (preferences.membership_enabled) {
+      await syncMembershipExpiryNotifications(adminSupabase, userId, userRole, Boolean(preferences.push_enabled))
     }
 
     return c.json({ success: true })
