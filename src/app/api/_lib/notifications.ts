@@ -12,6 +12,7 @@ export function getDefaultNotificationPreferences(userId: string) {
     chat_enabled: true,
     feedback_enabled: true,
     push_enabled: false,
+    membership_enabled: true,
     created_at: now,
     updated_at: now,
   }
@@ -46,6 +47,7 @@ export async function createNotificationIfNeeded(
       | "meal_feedback"
       | "workout_feedback"
       | "system"
+      | "membership_expiry"
     title: string
     message: string
     link?: string | null
