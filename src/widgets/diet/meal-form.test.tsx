@@ -53,8 +53,8 @@ describe("MealForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "날짜" }))
 
-    expect(screen.getByText("2026년 3월")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "12" })).toBeInTheDocument()
+    expect(screen.getByText(/March 2026/)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /March 12/ })).toBeInTheDocument()
   })
 
   it("식단 사진을 업로드 전에 WebP로 압축한다", async () => {

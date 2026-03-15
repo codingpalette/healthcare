@@ -187,11 +187,13 @@ export function InbodyForm({ open, onOpenChange, editRecord, defaultDate }: Inbo
                   <span>{formatDateLabel(measuredDate)}</span>
                   <CalendarIcon data-icon="inline-end" />
                 </PopoverTrigger>
-                <PopoverContent align="start" className="w-auto p-3" container={dialogContentRef}>
+                <PopoverContent align="start" className="w-auto p-3">
                   <Calendar
+                    mode="single"
                     defaultMonth={selectedDate}
                     selected={selectedDate}
-                    onSelect={(nextDate) => {
+                    onSelect={(nextDate: Date | undefined) => {
+                      if (!nextDate) return
                       setMeasuredDate(formatLocalDateValue(nextDate))
                       setIsDatePickerOpen(false)
                     }}

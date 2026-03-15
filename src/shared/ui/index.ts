@@ -89,7 +89,7 @@ export { Input } from "./input"
 export { Toaster } from "./sonner"
 export { Skeleton } from "./skeleton"
 export { Label } from "./label"
-export { Popover, PopoverContent, PopoverPortal, PopoverTrigger } from "./popover"
+export { Popover, PopoverContent, PopoverTrigger } from "./popover"
 export { Calendar } from "./calendar"
 export {
   Table,

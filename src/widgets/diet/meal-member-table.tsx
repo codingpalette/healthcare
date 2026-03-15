@@ -380,10 +380,11 @@ export function MealMemberTable() {
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-auto p-3">
                   <Calendar
+                    mode="single"
                     defaultMonth={new Date(`${selectedDate}T00:00:00`)}
                     selected={new Date(`${selectedDate}T00:00:00`)}
-                    onSelect={(nextDate) => {
-                      if (nextDate > todayDate) return
+                    onSelect={(nextDate: Date | undefined) => {
+                      if (!nextDate || nextDate > todayDate) return
                       setSelectedMeal(null)
                       setSelectedDate(formatLocalDateValue(nextDate))
                       setIsDatePickerOpen(false)

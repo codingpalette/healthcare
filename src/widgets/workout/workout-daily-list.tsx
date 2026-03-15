@@ -310,10 +310,11 @@ export function WorkoutDailyList() {
               </PopoverTrigger>
               <PopoverContent align="center" className="w-auto p-3">
                 <Calendar
+                  mode="single"
                   defaultMonth={new Date(`${selectedDate}T00:00:00`)}
                   selected={new Date(`${selectedDate}T00:00:00`)}
-                  onSelect={(nextDate) => {
-                    if (nextDate > todayDate) return
+                  onSelect={(nextDate: Date | undefined) => {
+                    if (!nextDate || nextDate > todayDate) return
                     setSelectedDate(formatLocalDateValue(nextDate))
                     setIsDatePickerOpen(false)
                   }}

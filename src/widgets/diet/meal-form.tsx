@@ -232,12 +232,13 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
               <PopoverContent
                 align="start"
                 className="w-auto p-3"
-                container={dialogContentRef}
               >
                 <Calendar
+                  mode="single"
                   defaultMonth={selectedDate}
                   selected={selectedDate}
-                  onSelect={(nextDate) => {
+                  onSelect={(nextDate: Date | undefined) => {
+                    if (!nextDate) return
                     setDate(formatDateValue(nextDate))
                     setIsDatePickerOpen(false)
                   }}

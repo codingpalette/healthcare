@@ -60,7 +60,7 @@ describe("AttendanceTodayTable", () => {
     render(<AttendanceTodayTable />)
 
     fireEvent.click(screen.getByRole("button", { name: /2026년 3월 12일 목/ }))
-    fireEvent.click(screen.getByRole("button", { name: "11" }))
+    fireEvent.click(screen.getByRole("button", { name: /March 11/ }))
 
     expect(useTodayAttendanceMock).toHaveBeenLastCalledWith("2026-03-11")
     expect(screen.getAllByText("김영희").length).toBeGreaterThan(0)

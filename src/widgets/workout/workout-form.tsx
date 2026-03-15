@@ -231,11 +231,13 @@ export function WorkoutForm({
                   <span>{formatDateLabel(date)}</span>
                   <CalendarIcon data-icon="inline-end" />
                 </PopoverTrigger>
-                <PopoverContent align="start" className="w-auto p-3" container={dialogContentRef}>
+                <PopoverContent align="start" className="w-auto p-3">
                   <Calendar
+                    mode="single"
                     defaultMonth={selectedDate}
                     selected={selectedDate}
-                    onSelect={(nextDate) => {
+                    onSelect={(nextDate: Date | undefined) => {
+                      if (!nextDate) return
                       setDate(formatLocalDateValue(nextDate))
                       setIsDatePickerOpen(false)
                     }}
