@@ -373,7 +373,10 @@ chatRoutes.get("/rooms/:id/messages", async (c) => {
     return c.json({ error: "대화방을 찾을 수 없습니다" }, 404)
   }
 
-  const { data, error } = await adminSupabase
+  const limit = Math.min(Number(c.req.query("limit") ?? 50), 100)
+  const cursor = c.req.query("cursor") // created_at 기준 커서
+
+  let query = adminSupabase
     .from("chat_messages")
     .select(`
       *,
@@ -385,11 +388,23 @@ chatRoutes.get("/rooms/:id/messages", async (c) => {
       )
     `)
     .eq("room_id", roomId)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(limit + 1) // 다음 페이지 존재 여부 확인용
+
+  if (cursor) {
+    query = query.lt("created_at", cursor)
+  }
+
+  const { data, error } = await query
 
   if (error) return c.json({ error: error.message }, 400)
 
-  const messages = (data ?? []).map((row: Record<string, unknown>) => {
+  const rows = data ?? []
+  const hasMore = rows.length > limit
+  const sliced = hasMore ? rows.slice(0, limit) : rows
+
+  // 오래된 순으로 정렬해서 반환
+  const messages = sliced.reverse().map((row: Record<string, unknown>) => {
     const sender = row.sender as Record<string, unknown> | null
 
     return {
@@ -401,7 +416,7 @@ chatRoutes.get("/rooms/:id/messages", async (c) => {
     }
   })
 
-  return c.json(messages)
+  return c.json({ messages, hasMore })
 })
 
 chatRoutes.post("/rooms/:id/messages", async (c) => {

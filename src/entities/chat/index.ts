@@ -7,6 +7,7 @@ export {
   sendChatMessage,
   updateChatMessage,
 } from "./api"
+export type { ChatMessagesPage } from "./api"
 export type {
   ChatAttachmentPayload,
   ChatMessage,

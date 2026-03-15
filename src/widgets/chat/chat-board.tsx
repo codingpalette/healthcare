@@ -415,7 +415,13 @@ export function ChatBoard({ profile }: { profile: Profile }) {
     }
   }, [rooms, selectedRoomId])
 
-  const { data: messages, isLoading: isMessagesLoading } = useChatMessages(selectedRoomId)
+  const {
+    messages,
+    isLoading: isMessagesLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useChatMessages(selectedRoomId)
   const sendMessage = useSendChatMessage()
   const {
     mutate: markRoomRead,
@@ -615,6 +621,18 @@ export function ChatBoard({ profile }: { profile: Profile }) {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {hasNextPage && (
+                      <div className="flex justify-center pb-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => fetchNextPage()}
+                          disabled={isFetchingNextPage}
+                        >
+                          {isFetchingNextPage ? "불러오는 중..." : "이전 메시지 보기"}
+                        </Button>
+                      </div>
+                    )}
                     {messages?.map((message) => (
                       <MessageBubble
                         key={message.id}

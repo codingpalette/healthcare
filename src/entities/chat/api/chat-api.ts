@@ -67,9 +67,22 @@ export async function getChatRooms(): Promise<ChatRoomSummary[]> {
   return (data as Record<string, unknown>[]).map(toChatRoom)
 }
 
-export async function getChatMessages(roomId: string): Promise<ChatMessage[]> {
+export interface ChatMessagesPage {
+  messages: ChatMessage[]
+  hasMore: boolean
+}
+
+export async function getChatMessages(
+  roomId: string,
+  params?: { limit?: number; cursor?: string }
+): Promise<ChatMessagesPage> {
   const accessToken = await getAccessToken()
-  const res = await fetch(`/api/chat/rooms/${roomId}/messages`, {
+  const searchParams = new URLSearchParams()
+  if (params?.limit) searchParams.set("limit", String(params.limit))
+  if (params?.cursor) searchParams.set("cursor", params.cursor)
+
+  const query = searchParams.toString()
+  const res = await fetch(`/api/chat/rooms/${roomId}/messages${query ? `?${query}` : ""}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -81,7 +94,11 @@ export async function getChatMessages(roomId: string): Promise<ChatMessage[]> {
   }
 
   const data = await res.json()
-  return (data as Record<string, unknown>[]).map(toChatMessage)
+  const raw = data as { messages: Record<string, unknown>[]; hasMore: boolean }
+  return {
+    messages: raw.messages.map(toChatMessage),
+    hasMore: raw.hasMore,
+  }
 }
 
 export async function ensureChatRoom(counterpartId: string): Promise<ChatRoomSummary> {

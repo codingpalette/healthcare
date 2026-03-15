@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useEffect, useMemo } from "react"
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/shared/api/supabase"
 import {
   deleteChatMessage,
@@ -12,7 +12,9 @@ import {
   sendChatMessage,
   updateChatMessage,
 } from "@/entities/chat"
-import type { SendChatMessageInput } from "@/entities/chat"
+import type { ChatMessagesPage, SendChatMessageInput } from "@/entities/chat"
+
+const MESSAGES_PER_PAGE = 50
 
 export function useChatRooms() {
   return useQuery({
@@ -22,11 +24,30 @@ export function useChatRooms() {
 }
 
 export function useChatMessages(roomId: string | null) {
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ["chat", "room", roomId, "messages"],
-    queryFn: () => getChatMessages(roomId!),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      getChatMessages(roomId!, { limit: MESSAGES_PER_PAGE, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage: ChatMessagesPage) => {
+      if (!lastPage.hasMore || !lastPage.messages.length) return undefined
+      // 가장 오래된 메시지의 created_at을 커서로 사용
+      return lastPage.messages[0].createdAt
+    },
     enabled: !!roomId,
   })
+
+  // 모든 페이지의 메시지를 하나의 배열로 합침 (오래된 순)
+  const messages = useMemo(() => {
+    if (!query.data?.pages) return []
+    // pages는 최신→오래된 순으로 쌓이므로 reverse 후 flatMap
+    return [...query.data.pages].reverse().flatMap((page) => page.messages)
+  }, [query.data?.pages])
+
+  return {
+    ...query,
+    messages,
+  }
 }
 
 export function useSendChatMessage() {
