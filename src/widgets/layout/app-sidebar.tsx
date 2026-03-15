@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/shared/ui/sidebar"
 import {
   Avatar,
@@ -44,6 +45,7 @@ interface AppSidebarProps {
 export function AppSidebar({ profile }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { setOpenMobile } = useSidebar()
 
   const roleLabel = profile.role === "trainer" ? "트레이너" : "회원"
   const initials = profile.name.slice(0, 1)
@@ -84,6 +86,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
                     isActive={isNavItemActive(pathname, item.href)}
+                    onClick={() => setOpenMobile(false)}
                   >
                     <item.icon />
                     <span>{item.title}</span>
