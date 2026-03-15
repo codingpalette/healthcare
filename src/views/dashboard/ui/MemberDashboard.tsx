@@ -8,6 +8,7 @@ import {
   TodayWorkoutCard,
 } from "@/widgets/dashboard"
 import { AttendanceCheckCard } from "@/widgets/dashboard/attendance-check-card"
+import { MembershipStatusCard } from "@/widgets/membership"
 
 interface MemberDashboardProps {
   profile: Profile
@@ -30,6 +31,7 @@ export function MemberDashboard({ profile }: MemberDashboardProps) {
       </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <AttendanceCheckCard />
+        <MembershipStatusCard />
         <TodayDietCard />
         <TodayWorkoutCard />
         <RecentQnaCard />
