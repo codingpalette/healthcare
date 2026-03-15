@@ -4,6 +4,7 @@ import {
   getNotificationPreferencesRow,
 } from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
+import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
 type ProfileRow = {
@@ -39,7 +40,7 @@ type ChatMessageRow = {
   updated_at: string
 }
 
-export const chatRoutes = new Hono<AuthEnv>().use(authMiddleware)
+export const chatRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 
 function getRoomReadField(userRole: "member" | "trainer") {
   return userRole === "trainer" ? "trainer_last_read_at" : "member_last_read_at"

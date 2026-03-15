@@ -4,12 +4,13 @@ import {
   getNotificationPreferencesRow,
 } from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
+import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 
 const MAX_IMAGES = 5
 
-export const dietRoutes = new Hono<AuthEnv>().use(authMiddleware)
+export const dietRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 
 function getTodayDateString() {
   return new Date().toISOString().split("T")[0]

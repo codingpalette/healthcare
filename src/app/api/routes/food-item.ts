@@ -1,8 +1,9 @@
 import { Hono } from "hono"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
+import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
-export const foodItemRoutes = new Hono<AuthEnv>().use(authMiddleware)
+export const foodItemRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 
 // GET / - 음식 목록 조회 (search 쿼리 파라미터로 이름 검색)
 foodItemRoutes.get("/", async (c) => {

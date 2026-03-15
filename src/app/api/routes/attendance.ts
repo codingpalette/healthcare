@@ -1,8 +1,9 @@
 import { Hono } from "hono"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
+import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
-export const attendanceRoutes = new Hono<AuthEnv>().use(authMiddleware)
+export const attendanceRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 
 function getTodayDateString() {
   return new Date().toISOString().split("T")[0]

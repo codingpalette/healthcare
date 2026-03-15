@@ -2,8 +2,9 @@ import { Hono } from "hono"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { deletePublicFile, deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
+import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
 
-export const inbodyRoutes = new Hono<AuthEnv>().use(authMiddleware)
+export const inbodyRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 
 const MAX_INBODY_IMAGE_BYTES = 10 * 1024 * 1024
 const MAX_IMAGES = 5
