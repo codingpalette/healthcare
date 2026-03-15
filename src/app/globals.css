@@ -74,6 +74,7 @@
 }
 
 @theme inline {
+    --breakpoint-desktop: 1500px;
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
