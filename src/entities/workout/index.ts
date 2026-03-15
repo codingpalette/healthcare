@@ -1,5 +1,6 @@
 export {
   createWorkout,
+  createWorkoutBatch,
   deleteWorkout,
   getMemberWorkouts,
   getMyWorkouts,
@@ -7,4 +8,4 @@ export {
   updateWorkout,
   updateWorkoutFeedback,
 } from "./api"
-export type { Workout, WorkoutInput, WorkoutWithProfile } from "./model"
+export type { Workout, WorkoutInput, WorkoutWithProfile, WorkoutBatchInput, WorkoutExerciseInput } from "./model"

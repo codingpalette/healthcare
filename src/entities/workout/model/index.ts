@@ -1,1 +1,1 @@
-export type { Workout, WorkoutInput, WorkoutWithProfile } from "./types"
+export type { Workout, WorkoutInput, WorkoutWithProfile, WorkoutBatchInput, WorkoutExerciseInput } from "./types"

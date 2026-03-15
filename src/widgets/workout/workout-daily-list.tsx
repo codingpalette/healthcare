@@ -4,6 +4,7 @@ import Image from "next/image"
 import { useState } from "react"
 import Link from "next/link"
 import {
+  BookOpen,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -50,6 +51,7 @@ import {
 } from "@/shared/ui"
 import { cn } from "@/shared/lib/utils"
 import { WorkoutForm } from "@/widgets/workout/workout-form"
+import { WorkoutJournalForm } from "@/widgets/workout/workout-journal-form"
 
 function formatLocalDateValue(date: Date): string {
   const year = date.getFullYear()
@@ -217,6 +219,7 @@ export function WorkoutDailyList() {
   const [selectedDate, setSelectedDate] = useState(today)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
+  const [journalFormOpen, setJournalFormOpen] = useState(false)
   const [editWorkout, setEditWorkout] = useState<Workout | undefined>()
   const [workoutToDelete, setWorkoutToDelete] = useState<Workout | undefined>()
   const [detailWorkout, setDetailWorkout] = useState<Workout | undefined>()
@@ -282,10 +285,16 @@ export function WorkoutDailyList() {
                 날짜별 운동일지와 인증 미디어를 관리하세요.
               </p>
             </div>
-            <Button size="sm" onClick={handleAdd}>
-              <Plus className="size-4" />
-              운동 추가
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setJournalFormOpen(true)}>
+                <BookOpen className="size-4" />
+                운동일지
+              </Button>
+              <Button size="sm" onClick={handleAdd}>
+                <Plus className="size-4" />
+                운동 추가
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-2 pt-2">
             <Button
@@ -494,6 +503,12 @@ export function WorkoutDailyList() {
           if (!open) setEditWorkout(undefined)
         }}
         editWorkout={editWorkout}
+        defaultDate={selectedDate}
+      />
+
+      <WorkoutJournalForm
+        open={journalFormOpen}
+        onOpenChange={setJournalFormOpen}
         defaultDate={selectedDate}
       />
 

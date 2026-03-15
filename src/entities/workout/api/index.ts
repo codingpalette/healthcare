@@ -1,5 +1,6 @@
 export {
   createWorkout,
+  createWorkoutBatch,
   getMyWorkouts,
   getTodayWorkouts,
   getMemberWorkouts,

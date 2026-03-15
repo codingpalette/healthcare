@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createWorkout,
+  createWorkoutBatch,
   deleteWorkout,
   getMemberWorkouts,
   getMyWorkouts,
@@ -10,7 +11,7 @@ import {
   updateWorkout,
   updateWorkoutFeedback,
 } from "@/entities/workout"
-import type { WorkoutInput } from "@/entities/workout"
+import type { WorkoutBatchInput, WorkoutInput } from "@/entities/workout"
 
 export function useMyWorkouts(from?: string, to?: string) {
   return useQuery({
@@ -84,6 +85,17 @@ export function useDeleteWorkout() {
 
   return useMutation({
     mutationFn: deleteWorkout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workout"] })
+    },
+  })
+}
+
+export function useCreateWorkoutBatch() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: WorkoutBatchInput) => createWorkoutBatch(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workout"] })
     },

@@ -29,3 +29,14 @@ export interface WorkoutInput {
   notes?: string | null
   date?: string
 }
+
+export interface WorkoutExerciseInput {
+  exerciseName: string
+  sets: Array<{ kg: number | null; reps: number | null }>
+  notes?: string
+}
+
+export interface WorkoutBatchInput {
+  exercises: WorkoutExerciseInput[]
+  date?: string
+}

@@ -1,5 +1,6 @@
 export {
   useCreateWorkout,
+  useCreateWorkoutBatch,
   useDeleteWorkout,
   useMemberWorkouts,
   useMyWorkouts,

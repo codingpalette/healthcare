@@ -1,5 +1,5 @@
 import { supabase } from "@/shared/api/supabase"
-import type { Workout, WorkoutInput, WorkoutWithProfile } from "@/entities/workout/model/types"
+import type { Workout, WorkoutBatchInput, WorkoutInput, WorkoutWithProfile } from "@/entities/workout/model/types"
 
 function toWorkout(row: Record<string, unknown>): Workout {
   return {
@@ -235,4 +235,24 @@ export async function deleteWorkout(id: string): Promise<void> {
     const err = await res.json()
     throw new Error(err.error ?? "운동 기록 삭제에 실패했습니다")
   }
+}
+
+export async function createWorkoutBatch(input: WorkoutBatchInput): Promise<Workout[]> {
+  const accessToken = await getAccessToken()
+  const res = await fetch("/api/workout/batch", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "운동 일지 저장에 실패했습니다")
+  }
+
+  const data = await res.json()
+  return (data as Record<string, unknown>[]).map(toWorkout)
 }

@@ -31,6 +31,65 @@ function applyWorkoutFilters<T extends {
   return nextQuery
 }
 
+// POST /batch - 여러 운동을 한번에 생성 (운동일지 모드)
+workoutRoutes.post("/batch", async (c) => {
+  const userId = c.get("userId")
+  const adminSupabase = createAdminSupabase()
+
+  const body = await c.req.json<{
+    exercises?: Array<{
+      exerciseName: string
+      sets: Array<{ kg: number | null; reps: number | null }>
+      notes?: string
+    }>
+    date?: string
+  }>()
+
+  if (!Array.isArray(body.exercises) || body.exercises.length === 0) {
+    return c.json({ error: "운동 목록을 입력해주세요" }, 400)
+  }
+
+  // 운동명이 있는 항목만 필터링
+  const validExercises = body.exercises.filter((ex) => ex.exerciseName?.trim())
+  if (validExercises.length === 0) {
+    return c.json({ error: "운동명을 입력해주세요" }, 400)
+  }
+
+  const targetDate =
+    body.date && /^\d{4}-\d{2}-\d{2}$/.test(body.date)
+      ? body.date
+      : getTodayDateString()
+
+  // 각 운동을 workouts 테이블에 개별 row로 insert
+  const insertRows = validExercises.map((ex) => {
+    // 첫 번째 세트 기준으로 weight/reps 저장
+    const firstSet = ex.sets?.[0]
+    // 전체 세트 정보를 JSON 문자열로 notes에 저장 (기존 notes가 있으면 앞에 추가)
+    const setsJson = JSON.stringify(ex.sets)
+    const notesValue = ex.notes
+      ? `${ex.notes}\n세트정보: ${setsJson}`
+      : `세트정보: ${setsJson}`
+
+    return {
+      user_id: userId,
+      exercise_name: ex.exerciseName.trim(),
+      sets: ex.sets?.length ?? null,
+      reps: firstSet?.reps ?? null,
+      weight: firstSet?.kg ?? null,
+      notes: notesValue,
+      date: targetDate,
+    }
+  })
+
+  const { data, error } = await adminSupabase
+    .from("workouts")
+    .insert(insertRows)
+    .select()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data, 201)
+})
+
 workoutRoutes.post("/", async (c) => {
   const userId = c.get("userId")
   const adminSupabase = createAdminSupabase()

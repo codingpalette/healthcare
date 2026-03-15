@@ -2,10 +2,12 @@
 
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
-import { CalendarIcon, Camera, Plus, X } from "lucide-react"
+import { CalendarIcon, Camera, Plus, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import type { Meal, MealInput, MealType } from "@/entities/meal"
+import type { FoodItem } from "@/entities/food-item"
 import { useCreateMeal, useUpdateMeal } from "@/features/diet"
+import { useFoodItems } from "@/features/food-item"
 import { compressImageToWebP } from "@/shared/lib/media"
 import {
   Calendar,
@@ -84,8 +86,28 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
   const [photos, setPhotos] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>(editMeal?.photoUrls ?? [])
 
+  // 음식 검색 상태
+  const [foodSearch, setFoodSearch] = useState("")
+  const [foodWeight, setFoodWeight] = useState("")
+  const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null)
+  const [showFoodDropdown, setShowFoodDropdown] = useState(false)
+  const foodSearchRef = useRef<HTMLDivElement>(null)
+
+  const { data: foodItems } = useFoodItems(foodSearch.trim() || undefined)
+
   const isSubmitting = createMeal.isPending || updateMeal.isPending
   const selectedDate = parseDateValue(date)
+
+  // 음식 검색 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (foodSearchRef.current && !foodSearchRef.current.contains(e.target as Node)) {
+        setShowFoodDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   useEffect(() => {
     // 컴포넌트 언마운트 시 blob URL 해제
@@ -98,6 +120,38 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 음식 선택 후 중량 변경 시 영양소 자동 계산
+  useEffect(() => {
+    if (!selectedFood) return
+    const weight = parseFloat(foodWeight)
+    if (!weight || weight <= 0) return
+
+    const ratio = weight / selectedFood.servingSize
+    if (selectedFood.calories != null) setCalories((selectedFood.calories * ratio).toFixed(1))
+    if (selectedFood.carbs != null) setCarbs((selectedFood.carbs * ratio).toFixed(1))
+    if (selectedFood.protein != null) setProtein((selectedFood.protein * ratio).toFixed(1))
+    if (selectedFood.fat != null) setFat((selectedFood.fat * ratio).toFixed(1))
+  }, [foodWeight, selectedFood])
+
+  function handleSelectFood(food: FoodItem) {
+    setSelectedFood(food)
+    setFoodSearch(food.name)
+    setShowFoodDropdown(false)
+    // 기본 중량은 servingSize로 설정
+    setFoodWeight(String(food.servingSize))
+    // 기본 중량 기준으로 영양소 자동 계산
+    if (food.calories != null) setCalories(food.calories.toFixed(1))
+    if (food.carbs != null) setCarbs(food.carbs.toFixed(1))
+    if (food.protein != null) setProtein(food.protein.toFixed(1))
+    if (food.fat != null) setFat(food.fat.toFixed(1))
+  }
+
+  function handleClearFood() {
+    setSelectedFood(null)
+    setFoodSearch("")
+    setFoodWeight("")
+  }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -245,6 +299,83 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          {/* 음식 검색 */}
+          <div className="space-y-2">
+            <Label>음식 검색 (선택)</Label>
+            <div ref={foodSearchRef} className="relative">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="음식명으로 검색..."
+                    value={foodSearch}
+                    onChange={(e) => {
+                      setFoodSearch(e.target.value)
+                      setShowFoodDropdown(true)
+                      if (!e.target.value) {
+                        setSelectedFood(null)
+                        setFoodWeight("")
+                      }
+                    }}
+                    onFocus={() => setShowFoodDropdown(true)}
+                    className="pl-8"
+                  />
+                </div>
+                {selectedFood && (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="중량(g)"
+                      value={foodWeight}
+                      onChange={(e) => setFoodWeight(e.target.value)}
+                      className="w-24"
+                    />
+                    <span className="text-xs text-muted-foreground">{selectedFood.unit}</span>
+                  </div>
+                )}
+                {selectedFood && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={handleClearFood}
+                    aria-label="음식 선택 초기화"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+
+              {/* 검색 결과 드롭다운 */}
+              {showFoodDropdown && foodItems && foodItems.length > 0 && (
+                <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-popover shadow-md">
+                  {foodItems.map((food) => (
+                    <button
+                      key={food.id}
+                      type="button"
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
+                      onClick={() => handleSelectFood(food)}
+                    >
+                      <span className="font-medium">{food.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {food.servingSize}{food.unit}
+                        {food.calories != null && ` · ${food.calories}kcal`}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {selectedFood && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {selectedFood.name} 선택됨 — 중량을 변경하면 영양소가 자동으로 계산됩니다
+                </p>
+              )}
+            </div>
           </div>
 
           {/* 설명 */}
