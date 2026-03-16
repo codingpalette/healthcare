@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   Megaphone,
+  MessageCircleHeart,
   MessagesSquare,
   Utensils,
   Users,
@@ -27,6 +28,7 @@ const commonNav: NavigationItem[] = [
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
   // { title: "Q&A", href: "/qna", icon: MessageCircle },
   { title: "기구 가이드", href: "/equipment", icon: Wrench },
+  { title: "커뮤니티", href: "/community", icon: MessageCircleHeart },
   { title: "공지사항", href: "/notices", icon: Megaphone },
 ]
 
