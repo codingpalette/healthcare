@@ -38,6 +38,8 @@ export function NotificationSettingsForm() {
         feedbackEnabled:
           field === "feedbackEnabled" ? !preferences.feedbackEnabled : preferences.feedbackEnabled,
         pushEnabled: preferences.pushEnabled,
+        membershipEnabled: preferences.membershipEnabled,
+        noticeEnabled: preferences.noticeEnabled,
       })
       toast.success("알림 설정을 저장했습니다")
     } catch (error) {
@@ -77,6 +79,8 @@ export function NotificationSettingsForm() {
         chatEnabled: preferences.chatEnabled,
         feedbackEnabled: preferences.feedbackEnabled,
         pushEnabled: true,
+        membershipEnabled: preferences.membershipEnabled,
+        noticeEnabled: preferences.noticeEnabled,
       })
       toast.success("Web Push 알림을 활성화했습니다")
     } catch (error) {
@@ -99,6 +103,8 @@ export function NotificationSettingsForm() {
         chatEnabled: preferences.chatEnabled,
         feedbackEnabled: preferences.feedbackEnabled,
         pushEnabled: false,
+        membershipEnabled: preferences.membershipEnabled,
+        noticeEnabled: preferences.noticeEnabled,
       })
       toast.success("Web Push 알림을 비활성화했습니다")
     } catch (error) {

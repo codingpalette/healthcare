@@ -13,6 +13,7 @@ export function getDefaultNotificationPreferences(userId: string) {
     feedback_enabled: true,
     push_enabled: false,
     membership_enabled: true,
+    notice_enabled: true,
     created_at: now,
     updated_at: now,
   }
@@ -48,6 +49,7 @@ export async function createNotificationIfNeeded(
       | "workout_feedback"
       | "system"
       | "membership_expiry"
+      | "notice"
     title: string
     message: string
     link?: string | null

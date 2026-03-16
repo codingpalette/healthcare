@@ -33,6 +33,8 @@ function toPreferences(row: Record<string, unknown>): NotificationPreferences {
     chatEnabled: Boolean(row.chat_enabled ?? true),
     feedbackEnabled: Boolean(row.feedback_enabled ?? true),
     pushEnabled: Boolean(row.push_enabled),
+    membershipEnabled: Boolean(row.membership_enabled ?? true),
+    noticeEnabled: Boolean(row.notice_enabled ?? true),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }

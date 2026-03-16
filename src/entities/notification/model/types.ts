@@ -5,6 +5,8 @@ export type NotificationKind =
   | "meal_feedback"
   | "workout_feedback"
   | "system"
+  | "membership_expiry"
+  | "notice"
 
 export interface NotificationItem {
   id: string
@@ -34,6 +36,8 @@ export interface NotificationPreferences {
   chatEnabled: boolean
   feedbackEnabled: boolean
   pushEnabled: boolean
+  membershipEnabled: boolean
+  noticeEnabled: boolean
   createdAt: string
   updatedAt: string
 }
@@ -44,6 +48,8 @@ export interface NotificationPreferencesInput {
   chatEnabled: boolean
   feedbackEnabled: boolean
   pushEnabled: boolean
+  membershipEnabled: boolean
+  noticeEnabled: boolean
 }
 
 export interface PushSubscriptionInput {
