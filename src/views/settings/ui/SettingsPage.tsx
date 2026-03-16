@@ -1,6 +1,7 @@
 "use client"
 
 import { ProfileEditForm } from "@/features/profile"
+import { PasswordChangeForm } from "@/features/auth"
 import { NotificationSettingsForm } from "@/features/notification"
 import { MyDeviceList } from "@/features/device-management"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui"
@@ -15,6 +16,14 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent>
           <ProfileEditForm />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>비밀번호 변경</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PasswordChangeForm />
         </CardContent>
       </Card>
       <NotificationSettingsForm />

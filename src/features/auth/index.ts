@@ -1,3 +1,3 @@
-export { signUp, signIn, signOut, parseDeviceInfo } from "./api"
+export { signUp, signIn, signOut, changePassword, parseDeviceInfo } from "./api"
 export { useAuthStore } from "./model"
-export { LoginForm, SignupForm } from "./ui"
+export { LoginForm, SignupForm, PasswordChangeForm } from "./ui"

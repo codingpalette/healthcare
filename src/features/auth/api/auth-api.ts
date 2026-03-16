@@ -41,6 +41,15 @@ export async function signIn({ email, password }: SignInParams) {
   return data
 }
 
+export async function changePassword(newPassword: string) {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+  })
+
+  if (error) throw error
+  return data
+}
+
 export async function signOut() {
   removeStoredDeviceId()
   const { error } = await supabase.auth.signOut()
