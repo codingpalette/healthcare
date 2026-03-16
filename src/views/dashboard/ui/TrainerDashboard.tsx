@@ -30,8 +30,8 @@ export function TrainerDashboard({ profile }: TrainerDashboardProps) {
         <AttendanceOverviewCard />
         <PendingFeedbackCard />
         <UnansweredQnaCard />
-        <MemberOverviewCard />
         <RecentNoticesCard />
+        <MemberOverviewCard />
       </div>
     </div>
   )
