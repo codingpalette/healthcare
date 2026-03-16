@@ -11,6 +11,7 @@ import { equipmentRoutes } from "@/app/api/routes/equipment"
 import { workoutRoutes } from "@/app/api/routes/workout"
 import { foodItemRoutes } from "@/app/api/routes/food-item"
 import { membershipsRoutes } from "@/app/api/routes/memberships"
+import { noticesRoutes } from "@/app/api/routes/notices"
 
 const app = new Hono().basePath("/api")
 
@@ -29,6 +30,7 @@ app.route("/notifications", notificationsRoutes)
 app.route("/devices", devicesRoutes)
 app.route("/food-items", foodItemRoutes)
 app.route("/memberships", membershipsRoutes)
+app.route("/notices", noticesRoutes)
 
 export const GET = handle(app)
 export const POST = handle(app)
