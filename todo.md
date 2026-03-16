@@ -174,15 +174,15 @@
 - [x] 회원권 만료 알림 (만료 7일/3일/1일 전 푸시 알림, 회원+트레이너 양방향)
 
 ## 접속 통계
-- [ ] 하루 접속 인원 수 집계 (로그인 기록 기반)
-- [ ] 트레이너/관리자용 접속 통계 대시보드 UI
+- [x] 하루 접속 인원 수 집계 (user_devices 활동 기록 기반)
+- [x] 트레이너용 접속 통계 대시보드 UI (shadcn Area Chart, 7일/30일 토글)
 
 ## 익명 단체 채팅 (/community)
-- [ ] 단체 채팅방 DB 마이그레이션 (community_chat 테이블: 닉네임 기반)
-- [ ] 단체 채팅 API (입장/퇴장/메시지 전송)
-- [ ] 단일 채팅방 UI (입장하기/퇴장하기만 존재, 사적 채팅방 생성 불가)
-- [ ] 닉네임 설정 (실명 대신 닉네임으로만 참여)
-- [ ] 실시간 메시지 (Supabase Realtime)
+- [x] 단체 채팅방 DB 마이그레이션 (community_members, community_messages 테이블: 닉네임 기반)
+- [x] 단체 채팅 API (입장/퇴장/메시지 전송)
+- [x] 단일 채팅방 UI (입장하기/퇴장하기만 존재, 사적 채팅방 생성 불가)
+- [x] 닉네임 설정 (실명 대신 닉네임으로만 참여)
+- [x] 실시간 메시지 (Supabase Realtime)
 
 ## 인프라/공통
 - [x] TanStack Query 설정 (QueryClientProvider + DevTools)

@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react"
 import {
+  BarChart3,
   CalendarCheck,
   ClipboardList,
   LayoutDashboard,
@@ -35,6 +36,7 @@ const commonNav: NavigationItem[] = [
 const trainerNav: NavigationItem[] = [
   { title: "회원 관리", href: "/members", icon: Users },
   { title: "음식 DB 관리", href: "/food-items", icon: Utensils },
+  { title: "접속 통계", href: "/stats", icon: BarChart3 },
 ]
 
 const memberNav: NavigationItem[] = []
