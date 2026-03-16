@@ -4,8 +4,15 @@ import { ArrowLeft, Pin } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { EditorRoot, EditorContent } from "novel"
+import { EditorRoot, EditorContent, StarterKit, TiptapImage, TiptapLink, Youtube } from "novel"
 import type { JSONContent } from "novel"
+
+const readOnlyExtensions = [
+  StarterKit,
+  TiptapImage,
+  TiptapLink.configure({ openOnClick: true }),
+  Youtube.configure({ controls: true, nocookie: true }),
+]
 import {
   Button,
   Badge,
@@ -86,9 +93,10 @@ export function NoticeDetail({ notice, isTrainer, onEdit }: NoticeDetailProps) {
       {/* 본문 (읽기 전용) */}
       <EditorRoot>
         <EditorContent
+          extensions={readOnlyExtensions}
           initialContent={notice.content as JSONContent}
           editable={false}
-          className="prose prose-sm max-w-none dark:prose-invert"
+          className="prose prose-sm max-w-none dark:prose-invert [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1"
         />
       </EditorRoot>
 

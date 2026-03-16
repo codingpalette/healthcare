@@ -22,6 +22,7 @@ export function storeDeviceId(deviceId: string): void {
 
 /** localStorage에서 device ID 조회 */
 export function getStoredDeviceId(): string | null {
+  if (typeof window === "undefined") return null
   return localStorage.getItem(DEVICE_ID_KEY)
 }
 
