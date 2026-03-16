@@ -25,7 +25,7 @@ export function NotificationSettingsForm() {
   const removePushSubscription = useRemovePushSubscription()
 
   async function togglePreference(
-    field: "inbodyEnabled" | "attendanceEnabled" | "chatEnabled" | "feedbackEnabled"
+    field: "inbodyEnabled" | "attendanceEnabled" | "chatEnabled" | "feedbackEnabled" | "noticeEnabled"
   ) {
     if (!preferences) return
 
@@ -39,7 +39,7 @@ export function NotificationSettingsForm() {
           field === "feedbackEnabled" ? !preferences.feedbackEnabled : preferences.feedbackEnabled,
         pushEnabled: preferences.pushEnabled,
         membershipEnabled: preferences.membershipEnabled,
-        noticeEnabled: preferences.noticeEnabled,
+        noticeEnabled: field === "noticeEnabled" ? !preferences.noticeEnabled : preferences.noticeEnabled,
       })
       toast.success("알림 설정을 저장했습니다")
     } catch (error) {
@@ -152,6 +152,13 @@ export function NotificationSettingsForm() {
               description="식단 또는 운동 피드백이 도착하면 알림을 표시합니다."
               checked={preferences.feedbackEnabled}
               onToggle={() => togglePreference("feedbackEnabled")}
+              disabled={updatePreferences.isPending}
+            />
+            <PreferenceRow
+              title="공지사항 알림"
+              description="새 공지사항이 등록되면 알림을 표시합니다."
+              checked={preferences.noticeEnabled}
+              onToggle={() => togglePreference("noticeEnabled")}
               disabled={updatePreferences.isPending}
             />
 

@@ -31,7 +31,8 @@ noticesRoutes.get("/", async (c) => {
   }
 
   if (search && search.length >= 2) {
-    query = query.ilike("title", `%${search}%`)
+    const escapedSearch = search.replace(/[%_\\]/g, '\\$&')
+    query = query.ilike("title", `%${escapedSearch}%`)
   }
 
   const { data, error, count } = await query
@@ -95,7 +96,7 @@ noticesRoutes.post("/", async (c) => {
   const adminSupabase = createAdminSupabase()
   const body = await c.req.json<{
     title?: string
-    content?: string
+    content?: Record<string, unknown>
     category?: string
     isPinned?: boolean
   }>()
@@ -103,16 +104,21 @@ noticesRoutes.post("/", async (c) => {
   if (!body.title?.trim()) {
     return c.json({ error: "제목을 입력해주세요" }, 400)
   }
-  if (!body.content?.trim()) {
+  if (!body.content || typeof body.content !== "object") {
     return c.json({ error: "내용을 입력해주세요" }, 400)
+  }
+
+  const validCategories = ["general", "important", "event"]
+  if (body.category && !validCategories.includes(body.category)) {
+    return c.json({ error: "유효하지 않은 카테고리입니다" }, 400)
   }
 
   const { data, error } = await adminSupabase
     .from("notices")
     .insert({
       title: body.title.trim(),
-      content: body.content.trim(),
-      category: body.category ?? null,
+      content: body.content,
+      category: body.category ?? "general",
       is_pinned: body.isPinned ?? false,
       author_id: userId,
     })
@@ -138,17 +144,22 @@ noticesRoutes.patch("/:id", async (c) => {
   const adminSupabase = createAdminSupabase()
   const body = await c.req.json<{
     title?: string
-    content?: string
+    content?: Record<string, unknown>
     category?: string
     isPinned?: boolean
   }>()
+
+  const validCategories = ["general", "important", "event"]
+  if (body.category && !validCategories.includes(body.category)) {
+    return c.json({ error: "유효하지 않은 카테고리입니다" }, 400)
+  }
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   }
 
   if (body.title !== undefined) updateData.title = body.title.trim()
-  if (body.content !== undefined) updateData.content = body.content.trim()
+  if (body.content !== undefined) updateData.content = body.content
   if (body.category !== undefined) updateData.category = body.category
   if (body.isPinned !== undefined) updateData.is_pinned = body.isPinned
 

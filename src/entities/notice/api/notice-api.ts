@@ -10,7 +10,7 @@ function toNotice(row: Record<string, unknown>): Notice {
     category: row.category as Notice["category"],
     isPinned: row.is_pinned as boolean,
     authorId: row.author_id as string,
-    authorName: (profiles?.full_name as string) ?? null,
+    authorName: (profiles?.name as string) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }
