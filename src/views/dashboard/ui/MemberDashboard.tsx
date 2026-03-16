@@ -36,7 +36,7 @@ export function MemberDashboard({ profile }: MemberDashboardProps) {
         <TodayDietCard />
         <MembershipStatusCard />
         <RecentNoticesCard />
-        <RecentQnaCard />
+        {/* <RecentQnaCard /> */}
         <EquipmentShortcutCard />
       </div>
     </div>
