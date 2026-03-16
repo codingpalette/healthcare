@@ -8,6 +8,7 @@ import {
   TodayWorkoutCard,
 } from "@/widgets/dashboard"
 import { AttendanceCheckCard } from "@/widgets/dashboard/attendance-check-card"
+import { RecentNoticesCard } from "@/widgets/dashboard/recent-notices-card"
 import { MembershipStatusCard } from "@/widgets/membership"
 
 interface MemberDashboardProps {
@@ -36,6 +37,7 @@ export function MemberDashboard({ profile }: MemberDashboardProps) {
         <TodayWorkoutCard />
         <RecentQnaCard />
         <EquipmentShortcutCard />
+        <RecentNoticesCard />
       </div>
     </div>
   )
