@@ -64,7 +64,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
-      <body className="pt-[env(safe-area-inset-top)]">
+      <body>
         <ThemeProvider>
           <TooltipProvider>
             <QueryProvider>{children}</QueryProvider>

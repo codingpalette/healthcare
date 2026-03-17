@@ -32,7 +32,7 @@ export function AppHeader() {
     "Healthcare"
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+    <header className="sticky top-0 z-40 flex shrink-0 items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)] h-[calc(3.5rem+env(safe-area-inset-top))]">
       <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
       <div className="mx-1 hidden h-4 w-px shrink-0 bg-border md:block" />
       <h1 className="text-base font-semibold">{title}</h1>
