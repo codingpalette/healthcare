@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: APP_NAME,
   },
   formatDetection: {
@@ -64,7 +64,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
-      <body>
+      <body className="pt-[env(safe-area-inset-top)]">
         <ThemeProvider>
           <TooltipProvider>
             <QueryProvider>{children}</QueryProvider>
