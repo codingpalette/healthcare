@@ -69,7 +69,7 @@ export default function RootLayout({
           <TooltipProvider>
             <QueryProvider>{children}</QueryProvider>
           </TooltipProvider>
-          <Toaster />
+          <Toaster position="top-center" />
           <InstallPrompt />
         </ThemeProvider>
       </body>

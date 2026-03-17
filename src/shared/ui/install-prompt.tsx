@@ -77,7 +77,7 @@ export function InstallPrompt() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="fixed inset-x-0 top-0 z-50 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
       <div className="bg-card border-border mx-auto flex max-w-md items-center gap-3 rounded-xl border p-4 shadow-lg">
         <div className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-lg">
           <Download className="text-primary size-5" />
