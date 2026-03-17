@@ -35,6 +35,12 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# serwist (PWA service worker 빌드 산출물)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/swe-worker-*.js.map
+
 # test results
 /test-results/
 /playwright-report/

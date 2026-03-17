@@ -11,7 +11,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export async function subscribeBrowserPush(publicKey: string) {
-  const registration = await navigator.serviceWorker.register("/notification-sw.js")
+  const registration = await navigator.serviceWorker.register("/sw.js")
   const existingSubscription = await registration.pushManager.getSubscription()
 
   if (existingSubscription) {
@@ -25,7 +25,7 @@ export async function subscribeBrowserPush(publicKey: string) {
 }
 
 export async function unsubscribeBrowserPush() {
-  const registration = await navigator.serviceWorker.getRegistration("/notification-sw.js")
+  const registration = await navigator.serviceWorker.getRegistration("/sw.js")
   const subscription = await registration?.pushManager.getSubscription()
 
   if (!subscription) return null
@@ -36,6 +36,6 @@ export async function unsubscribeBrowserPush() {
 }
 
 export async function getCurrentPushSubscription() {
-  const registration = await navigator.serviceWorker.getRegistration("/notification-sw.js")
+  const registration = await navigator.serviceWorker.getRegistration("/sw.js")
   return registration?.pushManager.getSubscription() ?? null
 }
