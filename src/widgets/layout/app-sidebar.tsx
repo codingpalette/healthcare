@@ -60,7 +60,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader>
+      <SidebarHeader className="pt-[env(safe-area-inset-top)]">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
