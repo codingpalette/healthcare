@@ -149,15 +149,15 @@
 - [x] 회원 기기 조회/강제 로그아웃 (회원관리 페이지)
 
 ## PWA (Progressive Web App)
-- [ ] next-pwa 또는 @serwist/next 설정
-- [ ] manifest.json 생성 (앱 이름, 아이콘, 테마 색상, display: standalone)
-- [ ] 앱 아이콘 생성 (192x192, 512x512)
-- [ ] Service Worker 설정 (오프라인 캐싱 전략)
-- [ ] 오프라인 fallback 페이지
+- [x] @serwist/next 설정
+- [x] manifest.json 생성 (앱 이름, 아이콘, 테마 색상, display: standalone)
+- [x] 앱 아이콘 생성 (192x192, 512x512)
+- [x] Service Worker 설정 (오프라인 캐싱 전략)
+- [x] 오프라인 fallback 페이지
 - [x] 푸시 알림 연동 (Supabase + Web Push API)
-- [ ] 설치 유도 배너 (A2HS prompt)
-- [ ] 스플래시 스크린 설정 (iOS/Android)
-- [ ] iOS meta 태그 추가 (apple-mobile-web-app-capable 등)
+- [x] 설치 유도 배너 (A2HS prompt)
+- [x] 스플래시 스크린 설정 (iOS/Android)
+- [x] iOS meta 태그 추가 (apple-mobile-web-app-capable 등)
 - [ ] 오프라인 데이터 동기화 (식단/운동 기록 로컬 저장 후 sync)
 
 ## 설정 페이지 (/settings)
