@@ -4,7 +4,7 @@ import { LoginForm } from "@/features/auth"
 
 export default function LoginPage() {
   return (
-    <main className="grid min-h-screen desktop:grid-cols-2">
+    <main className="grid min-h-dvh desktop:grid-cols-2 overflow-hidden">
       {/* 왼쪽: 브랜딩 영역 (1500px 미만에서 숨김) */}
       <div className="relative hidden desktop:block">
         <Image
