@@ -40,8 +40,8 @@ export function PendingFeedbackCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 rounded-xl bg-muted p-3">
-            <Camera className="size-5 text-primary" />
+          <div className="flex items-center gap-2 rounded-xl bg-muted p-3">
+            <Camera className="size-5 shrink-0 text-primary" />
             <div>
               <p className="text-sm font-medium">식단 인증</p>
               <p className="text-xs text-muted-foreground">
@@ -49,8 +49,8 @@ export function PendingFeedbackCard() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl bg-muted p-3">
-            <Dumbbell className="size-5 text-primary" />
+          <div className="flex items-center gap-2 rounded-xl bg-muted p-3">
+            <Dumbbell className="size-5 shrink-0 text-primary" />
             <div>
               <p className="text-sm font-medium">운동 인증</p>
               <p className="text-xs text-muted-foreground">
@@ -66,12 +66,12 @@ export function PendingFeedbackCard() {
               ? "식단과 운동 메뉴에서 회원 인증 내역을 확인할 수 있습니다"
               : "확인할 인증글이 없습니다"}
         </p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/diet"
             className={cn(
               buttonVariants({ size: "sm", variant: "outline" }),
-              "w-full"
+              "whitespace-nowrap"
             )}
           >
             식단 인증 확인
@@ -80,7 +80,7 @@ export function PendingFeedbackCard() {
             href="/workout"
             className={cn(
               buttonVariants({ size: "sm", variant: "outline" }),
-              "w-full"
+              "whitespace-nowrap"
             )}
           >
             운동 인증 확인
@@ -89,7 +89,7 @@ export function PendingFeedbackCard() {
             href="/chat"
             className={cn(
               buttonVariants({ size: "sm", variant: "outline" }),
-              "w-full"
+              "whitespace-nowrap"
             )}
           >
             <MessagesSquare className="size-4" />

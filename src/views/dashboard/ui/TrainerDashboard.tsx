@@ -26,7 +26,7 @@ export function TrainerDashboard({ profile }: TrainerDashboardProps) {
         <h2 className="text-2xl font-bold">안녕하세요, {profile.name}님</h2>
         <p className="text-muted-foreground">{today}</p>
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <AttendanceOverviewCard />
         <PendingFeedbackCard />
         {/* <UnansweredQnaCard /> */}
