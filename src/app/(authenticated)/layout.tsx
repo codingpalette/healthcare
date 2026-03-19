@@ -85,7 +85,7 @@ export default async function AuthenticatedLayout({
       <AppSidebar profile={profile} />
       <SidebarInset>
         <AppHeader />
-        <main className="flex-1 overflow-auto bg-primary/5 px-4 py-5 pb-36 md:p-8 md:pb-8">{children}</main>
+        <main className="min-h-[calc(100dvh-3.5rem)] flex-1 overflow-auto bg-primary/5 px-4 py-5 pb-36 md:p-8 md:pb-8">{children}</main>
       </SidebarInset>
       <MobileBottomNav profile={profile} />
     </SidebarProvider>
