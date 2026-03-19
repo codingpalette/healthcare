@@ -8,6 +8,7 @@ import { devicesRoutes } from "@/app/api/routes/devices"
 import { notificationsRoutes } from "@/app/api/routes/notifications"
 import { profilesRoutes } from "@/app/api/routes/profiles"
 import { equipmentRoutes } from "@/app/api/routes/equipment"
+import { exerciseRoutes } from "@/app/api/routes/exercises"
 import { workoutRoutes } from "@/app/api/routes/workout"
 import { foodItemRoutes } from "@/app/api/routes/food-item"
 import { membershipsRoutes } from "@/app/api/routes/memberships"
@@ -28,6 +29,7 @@ app.route("/diet", dietRoutes)
 app.route("/workout", workoutRoutes)
 app.route("/chat", chatRoutes)
 app.route("/equipment", equipmentRoutes)
+app.route("/exercises", exerciseRoutes)
 app.route("/notifications", notificationsRoutes)
 app.route("/devices", devicesRoutes)
 app.route("/food-items", foodItemRoutes)

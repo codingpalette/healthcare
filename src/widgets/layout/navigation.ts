@@ -5,6 +5,7 @@ import {
   BarChart3,
   CalendarCheck,
   ClipboardList,
+  Dumbbell,
   LayoutDashboard,
   MessageCircle,
   Megaphone,
@@ -29,6 +30,7 @@ const commonNav: NavigationItem[] = [
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
   // { title: "Q&A", href: "/qna", icon: MessageCircle },
   { title: "기구 가이드", href: "/equipment", icon: Wrench },
+  { title: "운동 가이드", href: "/exercise-guide", icon: Dumbbell },
   { title: "커뮤니티", href: "/community", icon: MessageCircleHeart },
   { title: "공지사항", href: "/notices", icon: Megaphone },
 ]

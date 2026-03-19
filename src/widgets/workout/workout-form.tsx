@@ -1,11 +1,14 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { CalendarIcon, Camera, ChevronDown, ChevronUp, Plus, X } from "lucide-react"
 import { toast } from "sonner"
 import type { Workout, WorkoutExerciseInput, WorkoutInput } from "@/entities/workout"
 import { useCreateWorkout, useCreateWorkoutBatch, useUpdateWorkout } from "@/features/workout"
+import { useExerciseItemSearch } from "@/features/exercise-item"
+import { EXERCISE_CATEGORY_LABELS } from "@/entities/exercise-item"
+import type { ExerciseCategory } from "@/entities/exercise-item"
 import { compressImageToWebP } from "@/shared/lib/media"
 import {
   Button,
@@ -22,6 +25,96 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/shared/ui"
+
+// ─── 디바운스 훅 ──────────────────────────────────────────────────────────────
+
+function useDebounce(value: string, delay: number) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debounced
+}
+
+// ─── 운동명 자동완성 ──────────────────────────────────────────────────────────
+
+interface ExerciseNameAutocompleteProps {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+  id?: string
+}
+
+function ExerciseNameAutocomplete({
+  value,
+  onChange,
+  placeholder = "운동명 (예: 바벨 스쿼트)",
+  className,
+  id,
+}: ExerciseNameAutocompleteProps) {
+  const [isFocused, setIsFocused] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const debouncedValue = useDebounce(value, 300)
+  const { data: suggestions } = useExerciseItemSearch(debouncedValue)
+
+  const filteredSuggestions = useMemo(() => {
+    if (!suggestions) return []
+    return suggestions.slice(0, 5)
+  }, [suggestions])
+
+  useEffect(() => {
+    setShowDropdown(isFocused && debouncedValue.length >= 2 && filteredSuggestions.length > 0)
+  }, [isFocused, debouncedValue, filteredSuggestions])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+        setIsFocused(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <Input
+        id={id}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        className={className}
+        autoComplete="off"
+      />
+      {showDropdown && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
+          {filteredSuggestions.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onChange(item.name)
+                setShowDropdown(false)
+              }}
+            >
+              <span className="flex-1 truncate">{item.name}</span>
+              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                {EXERCISE_CATEGORY_LABELS[item.category as ExerciseCategory]}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // 이미지 최대 개수
 const MAX_IMAGES = 5
@@ -272,10 +365,10 @@ function ExerciseCardView({
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
           {index + 1}
         </span>
-        <Input
+        <ExerciseNameAutocomplete
           placeholder="운동명 (예: 바벨 스쿼트)"
           value={card.exerciseName}
-          onChange={(e) => onUpdate(card.id, { exerciseName: e.target.value })}
+          onChange={(v) => onUpdate(card.id, { exerciseName: v })}
           className="h-8 flex-1 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus-visible:ring-0"
         />
         <div className="flex items-center gap-1">
@@ -534,12 +627,11 @@ function EditFormBody({ editWorkout, onOpenChange }: EditFormBodyProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="edit-exerciseName">운동명</Label>
-          <Input
+          <ExerciseNameAutocomplete
             id="edit-exerciseName"
             placeholder="예: 바벨 스쿼트"
             value={exerciseName}
-            onChange={(e) => setExerciseName(e.target.value)}
-            required
+            onChange={setExerciseName}
           />
         </div>
 
@@ -1037,10 +1129,10 @@ function AddFormBody({ defaultDate, onOpenChange }: AddFormBodyProps) {
               {cards.map((card) => (
                 <tr key={card.id} className="border-b last:border-0">
                   <td className="px-2 py-1.5">
-                    <Input
+                    <ExerciseNameAutocomplete
                       placeholder="운동명"
                       value={card.exerciseName}
-                      onChange={(e) => updateCard(card.id, { exerciseName: e.target.value })}
+                      onChange={(v) => updateCard(card.id, { exerciseName: v })}
                       className="h-8 text-xs"
                     />
                   </td>
