@@ -1,17 +1,71 @@
 "use client"
 
+import { useSearchParams, useRouter } from "next/navigation"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/ui"
 import { DailyAccessChart } from "@/widgets/stats"
 
+const TABS = [
+  { value: "access", label: "접속" },
+  { value: "attendance", label: "출석" },
+  { value: "members", label: "회원" },
+  { value: "diet", label: "식단" },
+  { value: "workout", label: "운동" },
+  { value: "inbody", label: "인바디" },
+] as const
+
 export function StatsPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const currentTab = searchParams.get("tab") ?? "access"
+
+  function handleTabChange(value: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("tab", value)
+    router.replace(`?${params.toString()}`)
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">접속 통계</h2>
+        <h2 className="text-2xl font-bold">통계</h2>
         <p className="text-muted-foreground">
-          일별 접속 현황을 확인하세요.
+          센터 운영 현황을 한눈에 확인하세요.
         </p>
       </div>
-      <DailyAccessChart />
+
+      <Tabs value={currentTab} onValueChange={handleTabChange}>
+        <TabsList className="w-full justify-start overflow-x-auto">
+          {TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="access" className="mt-6">
+          <DailyAccessChart />
+        </TabsContent>
+
+        <TabsContent value="attendance" className="mt-6">
+          <p className="text-muted-foreground">출석 통계 준비 중...</p>
+        </TabsContent>
+
+        <TabsContent value="members" className="mt-6">
+          <p className="text-muted-foreground">회원 통계 준비 중...</p>
+        </TabsContent>
+
+        <TabsContent value="diet" className="mt-6">
+          <p className="text-muted-foreground">식단 통계 준비 중...</p>
+        </TabsContent>
+
+        <TabsContent value="workout" className="mt-6">
+          <p className="text-muted-foreground">운동 통계 준비 중...</p>
+        </TabsContent>
+
+        <TabsContent value="inbody" className="mt-6">
+          <p className="text-muted-foreground">인바디 통계 준비 중...</p>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
