@@ -36,7 +36,7 @@ const commonNav: NavigationItem[] = [
 const trainerNav: NavigationItem[] = [
   { title: "회원 관리", href: "/members", icon: Users },
   { title: "음식 DB 관리", href: "/food-items", icon: Utensils },
-  { title: "접속 통계", href: "/stats", icon: BarChart3 },
+  { title: "통계", href: "/stats", icon: BarChart3 },
 ]
 
 const memberNav: NavigationItem[] = []
