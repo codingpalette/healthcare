@@ -107,6 +107,7 @@ export function FoodItemManager({ onAdd, onEdit }: FoodItemManagerProps) {
                   <TableHead className="text-right">탄수화물</TableHead>
                   <TableHead className="text-right">단백질</TableHead>
                   <TableHead className="text-right">지방</TableHead>
+                  <TableHead className="text-right">섬유질</TableHead>
                   <TableHead className="w-20 text-center">관리</TableHead>
                 </TableRow>
               </TableHeader>
@@ -153,6 +154,9 @@ function FoodItemRow({
       </TableCell>
       <TableCell className="text-right">
         {item.fat != null ? `${item.fat} g` : "-"}
+      </TableCell>
+      <TableCell className="text-right">
+        {item.fiber != null ? `${item.fiber} g` : "-"}
       </TableCell>
       <TableCell>
         <div className="flex items-center justify-center gap-1">
