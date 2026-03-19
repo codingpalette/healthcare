@@ -92,19 +92,19 @@ function ExerciseNameAutocomplete({
         autoComplete="off"
       />
       {showDropdown && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-48 rounded-md border bg-popover shadow-md">
           {filteredSuggestions.map((item) => (
             <button
               key={item.id}
               type="button"
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent whitespace-nowrap"
               onMouseDown={(e) => {
                 e.preventDefault()
                 onChange(item.name)
                 setShowDropdown(false)
               }}
             >
-              <span className="flex-1 truncate">{item.name}</span>
+              <span>{item.name}</span>
               <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                 {EXERCISE_CATEGORY_LABELS[item.category as ExerciseCategory]}
               </span>
