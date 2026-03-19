@@ -11,6 +11,7 @@ function toFoodItem(row: Record<string, unknown>): FoodItem {
     carbs: row.carbs != null ? Number(row.carbs) : null,
     protein: row.protein != null ? Number(row.protein) : null,
     fat: row.fat != null ? Number(row.fat) : null,
+    fiber: row.fiber != null ? Number(row.fiber) : null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }

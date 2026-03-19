@@ -375,7 +375,7 @@ statsRoutes.get("/diet", async (c) => {
   // 기간 내 식단 데이터 조회
   const { data: mealData, error: mealError } = await adminSupabase
     .from("meals")
-    .select("user_id, date, calories, carbs, protein, fat")
+    .select("user_id, date, calories, carbs, protein, fat, fiber")
     .gte("date", toDateString(startDate))
 
   if (mealError) return c.json({ error: mealError.message }, 400)
@@ -383,7 +383,7 @@ statsRoutes.get("/diet", async (c) => {
   const rows = mealData ?? []
 
   // 날짜별 집계
-  type DayAgg = { users: Set<string>; calories: number[]; carbs: number[]; protein: number[]; fat: number[] }
+  type DayAgg = { users: Set<string>; calories: number[]; carbs: number[]; protein: number[]; fat: number[]; fiber: number[] }
   const dateMap = new Map<string, DayAgg>()
 
   // 회원별 집계
@@ -392,13 +392,14 @@ statsRoutes.get("/diet", async (c) => {
 
   for (const row of rows) {
     const dateStr = row.date as string
-    if (!dateMap.has(dateStr)) dateMap.set(dateStr, { users: new Set(), calories: [], carbs: [], protein: [], fat: [] })
+    if (!dateMap.has(dateStr)) dateMap.set(dateStr, { users: new Set(), calories: [], carbs: [], protein: [], fat: [], fiber: [] })
     const agg = dateMap.get(dateStr)!
     agg.users.add(row.user_id as string)
     if (row.calories != null) agg.calories.push(Number(row.calories))
     if (row.carbs != null) agg.carbs.push(Number(row.carbs))
     if (row.protein != null) agg.protein.push(Number(row.protein))
     if (row.fat != null) agg.fat.push(Number(row.fat))
+    if (row.fiber != null) agg.fiber.push(Number(row.fiber))
 
     if (!memberMap.has(row.user_id as string)) memberMap.set(row.user_id as string, { submittedDates: new Set(), totalCalories: 0, lastRecordDate: "" })
     const magg = memberMap.get(row.user_id as string)!
@@ -421,6 +422,7 @@ statsRoutes.get("/diet", async (c) => {
       avgCarbs: avg(agg?.carbs ?? []),
       avgProtein: avg(agg?.protein ?? []),
       avgFat: avg(agg?.fat ?? []),
+      avgFiber: avg(agg?.fiber ?? []),
     }
   })
 

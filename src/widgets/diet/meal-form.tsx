@@ -81,6 +81,7 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
   const [carbs, setCarbs] = useState(editMeal?.carbs?.toString() ?? "")
   const [protein, setProtein] = useState(editMeal?.protein?.toString() ?? "")
   const [fat, setFat] = useState(editMeal?.fat?.toString() ?? "")
+  const [fiber, setFiber] = useState(editMeal?.fiber?.toString() ?? "")
   const [date, setDate] = useState(editMeal?.date ?? defaultDate ?? formatDateValue(new Date()))
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [photos, setPhotos] = useState<File[]>([])
@@ -132,6 +133,7 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
     if (selectedFood.carbs != null) setCarbs((selectedFood.carbs * ratio).toFixed(1))
     if (selectedFood.protein != null) setProtein((selectedFood.protein * ratio).toFixed(1))
     if (selectedFood.fat != null) setFat((selectedFood.fat * ratio).toFixed(1))
+    if (selectedFood.fiber != null) setFiber((selectedFood.fiber * ratio).toFixed(1))
   }, [foodWeight, selectedFood])
 
   function handleSelectFood(food: FoodItem) {
@@ -145,6 +147,7 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
     if (food.carbs != null) setCarbs(food.carbs.toFixed(1))
     if (food.protein != null) setProtein(food.protein.toFixed(1))
     if (food.fat != null) setFat(food.fat.toFixed(1))
+    if (food.fiber != null) setFiber(food.fiber.toFixed(1))
   }
 
   function handleClearFood() {
@@ -215,6 +218,7 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
       carbs: carbs ? Number(carbs) : undefined,
       protein: protein ? Number(protein) : undefined,
       fat: fat ? Number(fat) : undefined,
+      fiber: fiber ? Number(fiber) : undefined,
       date,
     }
 
@@ -437,6 +441,18 @@ export function MealForm({ open, onOpenChange, editMeal, defaultDate }: MealForm
                 placeholder="0"
                 value={fat}
                 onChange={(e) => setFat(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fiber">섬유질 (g)</Label>
+              <Input
+                id="fiber"
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="0"
+                value={fiber}
+                onChange={(e) => setFiber(e.target.value)}
               />
             </div>
           </div>

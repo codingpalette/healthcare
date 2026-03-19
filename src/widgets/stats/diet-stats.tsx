@@ -29,13 +29,14 @@ import {
 } from "@/shared/ui/chart"
 import { useDietStats } from "@/features/stats"
 
-type NutrientKey = "avgCalories" | "avgCarbs" | "avgProtein" | "avgFat"
+type NutrientKey = "avgCalories" | "avgCarbs" | "avgProtein" | "avgFat" | "avgFiber"
 
 const NUTRIENT_CONFIG: Record<NutrientKey, { label: string; unit: string }> = {
   avgCalories: { label: "칼로리", unit: "kcal" },
   avgCarbs: { label: "탄수화물", unit: "g" },
   avgProtein: { label: "단백질", unit: "g" },
   avgFat: { label: "지방", unit: "g" },
+  avgFiber: { label: "섬유질", unit: "g" },
 }
 
 const areaChartConfig = {
@@ -50,6 +51,7 @@ const nutrientChartConfig = {
   avgCarbs: { label: "탄수화물", color: "hsl(var(--chart-2))" },
   avgProtein: { label: "단백질", color: "hsl(var(--chart-2))" },
   avgFat: { label: "지방", color: "hsl(var(--chart-2))" },
+  avgFiber: { label: "섬유질", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig
 
 function formatXAxisDate(dateStr: string): string {

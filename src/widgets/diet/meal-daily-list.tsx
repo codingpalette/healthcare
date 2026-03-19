@@ -81,8 +81,9 @@ export function MealDailyList() {
       carbs: acc.carbs + (meal.carbs ?? 0),
       protein: acc.protein + (meal.protein ?? 0),
       fat: acc.fat + (meal.fat ?? 0),
+      fiber: acc.fiber + (meal.fiber ?? 0),
     }),
-    { calories: 0, carbs: 0, protein: 0, fat: 0 }
+    { calories: 0, carbs: 0, protein: 0, fat: 0, fiber: 0 }
   )
 
   function handleEdit(meal: Meal) {
@@ -160,7 +161,7 @@ export function MealDailyList() {
         <CardContent className="space-y-3">
           {/* 일일 영양소 합계 */}
           {meals && meals.length > 0 && (
-            <div className="grid grid-cols-4 gap-2 rounded-xl bg-muted p-3 text-center text-sm">
+            <div className="grid grid-cols-5 gap-2 rounded-xl bg-muted p-3 text-center text-sm">
               <div>
                 <p className="text-muted-foreground">칼로리</p>
                 <p className="font-semibold">{totals.calories}kcal</p>
@@ -176,6 +177,10 @@ export function MealDailyList() {
               <div>
                 <p className="text-muted-foreground">지방</p>
                 <p className="font-semibold">{totals.fat.toFixed(1)}g</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">섬유질</p>
+                <p className="font-semibold">{totals.fiber.toFixed(1)}g</p>
               </div>
             </div>
           )}
@@ -231,12 +236,13 @@ export function MealDailyList() {
                           {meal.description}
                         </p>
                       )}
-                      {(meal.carbs != null || meal.protein != null || meal.fat != null) && (
+                      {(meal.carbs != null || meal.protein != null || meal.fat != null || meal.fiber != null) && (
                         <p className="mt-1 text-xs text-muted-foreground">
                           {[
                             meal.carbs != null && `탄 ${meal.carbs}g`,
                             meal.protein != null && `단 ${meal.protein}g`,
                             meal.fat != null && `지 ${meal.fat}g`,
+                            meal.fiber != null && `섬 ${meal.fiber}g`,
                           ]
                             .filter(Boolean)
                             .join(" · ")}

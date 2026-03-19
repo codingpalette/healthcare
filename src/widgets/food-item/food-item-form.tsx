@@ -33,6 +33,7 @@ export function FoodItemForm({ open, onOpenChange, editTarget }: FoodItemFormPro
   const [carbs, setCarbs] = useState(editTarget?.carbs != null ? String(editTarget.carbs) : "")
   const [protein, setProtein] = useState(editTarget?.protein != null ? String(editTarget.protein) : "")
   const [fat, setFat] = useState(editTarget?.fat != null ? String(editTarget.fat) : "")
+  const [fiber, setFiber] = useState(editTarget?.fiber != null ? String(editTarget.fiber) : "")
 
   const isPending = createFoodItem.isPending || updateFoodItem.isPending
 
@@ -56,6 +57,7 @@ export function FoodItemForm({ open, onOpenChange, editTarget }: FoodItemFormPro
       carbs: parseNum(carbs),
       protein: parseNum(protein),
       fat: parseNum(fat),
+      fiber: parseNum(fiber),
     }
 
     try {
@@ -133,8 +135,8 @@ export function FoodItemForm({ open, onOpenChange, editTarget }: FoodItemFormPro
             />
           </div>
 
-          {/* 탄수화물 / 단백질 / 지방 */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* 탄수화물 / 단백질 / 지방 / 섬유질 */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="carbs">탄수화물 (g)</Label>
               <Input
@@ -168,6 +170,18 @@ export function FoodItemForm({ open, onOpenChange, editTarget }: FoodItemFormPro
                 step="any"
                 value={fat}
                 onChange={(e) => setFat(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fiber">섬유질 (g)</Label>
+              <Input
+                id="fiber"
+                type="number"
+                min="0"
+                step="any"
+                value={fiber}
+                onChange={(e) => setFiber(e.target.value)}
                 placeholder="0"
               />
             </div>

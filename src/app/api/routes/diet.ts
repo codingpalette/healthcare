@@ -39,6 +39,7 @@ dietRoutes.post("/", async (c) => {
   let carbs: string | undefined
   let protein: string | undefined
   let fat: string | undefined
+  let fiber: string | undefined
   let date: string | undefined
   const photoUrls: string[] = []
 
@@ -73,6 +74,7 @@ dietRoutes.post("/", async (c) => {
     carbs = formData.get("carbs") as string | undefined
     protein = formData.get("protein") as string | undefined
     fat = formData.get("fat") as string | undefined
+    fiber = formData.get("fiber") as string | undefined
     date = formData.get("date") as string | undefined
   } else {
     const body = await c.req.json<{
@@ -82,6 +84,7 @@ dietRoutes.post("/", async (c) => {
       carbs?: number
       protein?: number
       fat?: number
+      fiber?: number
       date?: string
     }>()
     mealType = body.mealType
@@ -90,6 +93,7 @@ dietRoutes.post("/", async (c) => {
     carbs = body.carbs != null ? String(body.carbs) : undefined
     protein = body.protein != null ? String(body.protein) : undefined
     fat = body.fat != null ? String(body.fat) : undefined
+    fiber = body.fiber != null ? String(body.fiber) : undefined
     date = body.date
   }
 
@@ -106,6 +110,7 @@ dietRoutes.post("/", async (c) => {
   if (carbs) insertData.carbs = Number(carbs)
   if (protein) insertData.protein = Number(protein)
   if (fat) insertData.fat = Number(fat)
+  if (fiber) insertData.fiber = Number(fiber)
   if (photoUrls.length) insertData.photo_urls = photoUrls
   if (date) insertData.date = date
 
@@ -304,6 +309,7 @@ dietRoutes.patch("/:id", async (c) => {
     const carbs = formData.get("carbs") as string | null
     const protein = formData.get("protein") as string | null
     const fat = formData.get("fat") as string | null
+    const fiber = formData.get("fiber") as string | null
     const date = formData.get("date") as string | null
 
     if (mealType) updateData.meal_type = mealType
@@ -312,6 +318,7 @@ dietRoutes.patch("/:id", async (c) => {
     if (carbs) updateData.carbs = Number(carbs)
     if (protein) updateData.protein = Number(protein)
     if (fat) updateData.fat = Number(fat)
+    if (fiber) updateData.fiber = Number(fiber)
     if (date) updateData.date = date
   } else {
     const body = await c.req.json<Record<string, unknown>>()
@@ -321,6 +328,7 @@ dietRoutes.patch("/:id", async (c) => {
     if (body.carbs !== undefined) updateData.carbs = body.carbs
     if (body.protein !== undefined) updateData.protein = body.protein
     if (body.fat !== undefined) updateData.fat = body.fat
+    if (body.fiber !== undefined) updateData.fiber = body.fiber
     if (body.date) updateData.date = body.date
   }
 

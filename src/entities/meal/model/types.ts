@@ -9,6 +9,7 @@ export interface Meal {
   carbs: number | null
   protein: number | null
   fat: number | null
+  fiber: number | null
   photoUrls: string[]
   trainerFeedback: string | null
   date: string
@@ -27,5 +28,6 @@ export interface MealInput {
   carbs?: number
   protein?: number
   fat?: number
+  fiber?: number
   date?: string
 }

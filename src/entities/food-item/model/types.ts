@@ -7,6 +7,7 @@ export interface FoodItem {
   carbs: number | null
   protein: number | null
   fat: number | null
+  fiber: number | null
   createdAt: string
   updatedAt: string
 }
@@ -19,4 +20,5 @@ export type FoodItemInput = {
   carbs?: number | null
   protein?: number | null
   fat?: number | null
+  fiber?: number | null
 }

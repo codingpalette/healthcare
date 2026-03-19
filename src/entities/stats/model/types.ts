@@ -74,6 +74,7 @@ export interface DietStatsDaily {
   avgCarbs: number
   avgProtein: number
   avgFat: number
+  avgFiber: number
 }
 
 export interface DietStatsMember {

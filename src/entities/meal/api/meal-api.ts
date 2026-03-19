@@ -12,6 +12,7 @@ function toMeal(row: Record<string, unknown>): Meal {
     carbs: (row.carbs as number) ?? null,
     protein: (row.protein as number) ?? null,
     fat: (row.fat as number) ?? null,
+    fiber: (row.fiber as number) ?? null,
     photoUrls: (row.photo_urls as string[]) ?? [],
     trainerFeedback: (row.trainer_feedback as string) ?? null,
     date: row.date as string,
@@ -43,6 +44,7 @@ export async function createMeal(input: MealInput, photos?: File[]): Promise<Mea
     if (input.carbs != null) formData.append("carbs", String(input.carbs))
     if (input.protein != null) formData.append("protein", String(input.protein))
     if (input.fat != null) formData.append("fat", String(input.fat))
+    if (input.fiber != null) formData.append("fiber", String(input.fiber))
     if (input.date) formData.append("date", input.date)
 
     res = await fetch("/api/diet", {
@@ -176,6 +178,7 @@ export async function updateMeal(
     if (input.carbs != null) formData.append("carbs", String(input.carbs))
     if (input.protein != null) formData.append("protein", String(input.protein))
     if (input.fat != null) formData.append("fat", String(input.fat))
+    if (input.fiber != null) formData.append("fiber", String(input.fiber))
     if (input.date) formData.append("date", input.date)
 
     res = await fetch(`/api/diet/${id}`, {

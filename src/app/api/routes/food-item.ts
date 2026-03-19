@@ -39,6 +39,7 @@ foodItemRoutes.post("/", async (c) => {
     carbs?: number | null
     protein?: number | null
     fat?: number | null
+    fiber?: number | null
   }>()
 
   if (!body.name?.trim()) {
@@ -55,6 +56,7 @@ foodItemRoutes.post("/", async (c) => {
   if (body.carbs !== undefined) insertData.carbs = body.carbs
   if (body.protein !== undefined) insertData.protein = body.protein
   if (body.fat !== undefined) insertData.fat = body.fat
+  if (body.fiber !== undefined) insertData.fiber = body.fiber
 
   const { data, error } = await adminSupabase
     .from("food_items")
@@ -82,6 +84,7 @@ foodItemRoutes.patch("/:id", async (c) => {
     carbs?: number | null
     protein?: number | null
     fat?: number | null
+    fiber?: number | null
   }>()
 
   const adminSupabase = createAdminSupabase()
@@ -95,6 +98,7 @@ foodItemRoutes.patch("/:id", async (c) => {
   if (body.carbs !== undefined) updateData.carbs = body.carbs
   if (body.protein !== undefined) updateData.protein = body.protein
   if (body.fat !== undefined) updateData.fat = body.fat
+  if (body.fiber !== undefined) updateData.fiber = body.fiber
 
   const { data, error } = await adminSupabase
     .from("food_items")
