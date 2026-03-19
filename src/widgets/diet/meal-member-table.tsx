@@ -90,11 +90,12 @@ function formatFullDate(dateStr: string): string {
   })
 }
 
-function formatMacros(meal: { carbs: number | null; protein: number | null; fat: number | null }) {
+function formatMacros(meal: { carbs: number | null; protein: number | null; fat: number | null; fiber: number | null }) {
   return [
     meal.carbs != null && `탄 ${meal.carbs}g`,
     meal.protein != null && `단 ${meal.protein}g`,
     meal.fat != null && `지 ${meal.fat}g`,
+    meal.fiber != null && `섬 ${meal.fiber}g`,
   ]
     .filter(Boolean)
     .join(" · ")

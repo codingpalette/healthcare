@@ -50,20 +50,22 @@ export function MealWeeklySummary() {
 
   // 주간 평균 탄단지
   const weeklyAvg = useMemo(() => {
-    if (!meals?.length) return { carbs: 0, protein: 0, fat: 0 }
+    if (!meals?.length) return { carbs: 0, protein: 0, fat: 0, fiber: 0 }
     const daysWithMeals = new Set(meals.map((m) => m.date)).size || 1
     const totals = meals.reduce(
       (acc, m) => ({
         carbs: acc.carbs + (m.carbs ?? 0),
         protein: acc.protein + (m.protein ?? 0),
         fat: acc.fat + (m.fat ?? 0),
+        fiber: acc.fiber + (m.fiber ?? 0),
       }),
-      { carbs: 0, protein: 0, fat: 0 }
+      { carbs: 0, protein: 0, fat: 0, fiber: 0 }
     )
     return {
       carbs: totals.carbs / daysWithMeals,
       protein: totals.protein / daysWithMeals,
       fat: totals.fat / daysWithMeals,
+      fiber: totals.fiber / daysWithMeals,
     }
   }, [meals])
 
@@ -115,7 +117,7 @@ export function MealWeeklySummary() {
             </div>
 
             {/* 주간 평균 탄단지 */}
-            <div className="grid grid-cols-3 gap-3 rounded-xl bg-muted p-3 text-center">
+            <div className="grid grid-cols-4 gap-3 rounded-xl bg-muted p-3 text-center">
               <div>
                 <p className="text-xs text-muted-foreground">평균 탄수화물</p>
                 <p className="text-sm font-semibold">{weeklyAvg.carbs.toFixed(1)}g</p>
@@ -127,6 +129,10 @@ export function MealWeeklySummary() {
               <div>
                 <p className="text-xs text-muted-foreground">평균 지방</p>
                 <p className="text-sm font-semibold">{weeklyAvg.fat.toFixed(1)}g</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">평균 섬유질</p>
+                <p className="text-sm font-semibold">{weeklyAvg.fiber.toFixed(1)}g</p>
               </div>
             </div>
           </>
