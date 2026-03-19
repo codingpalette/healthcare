@@ -1,2 +1,2 @@
-export { getDailyAccessStats } from "./api"
-export type { DailyAccessStats, DailyAccessEntry } from "./model"
+export { getDailyAccessStats, getAttendanceStats, getMemberStats, getDietStats, getWorkoutStats, getInbodyStats } from "./api"
+export type { DailyAccessStats, DailyAccessEntry, AttendanceStats, AttendanceStatsDaily, AttendanceStatsWeekday, AttendanceStatsMember, MemberStats, MemberStatsTrend, MemberStatsRetention, MemberStatsInactive, DietStats, DietStatsDaily, DietStatsMember, WorkoutStats, WorkoutStatsDaily, WorkoutStatsExercise, WorkoutStatsMember, InbodyStats, InbodyStatsMonthly, InbodyStatsMember } from "./model"
