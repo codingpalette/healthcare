@@ -1,3 +1,6 @@
 export { DailyAccessChart } from "./daily-access-chart"
 export { AttendanceStats } from "./attendance-stats"
 export { MemberStatsWidget } from "./member-stats"
+export { DietStatsWidget } from "./diet-stats"
+export { WorkoutStatsWidget } from "./workout-stats"
+export { InbodyStatsWidget } from "./inbody-stats"
