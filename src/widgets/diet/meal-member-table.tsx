@@ -208,9 +208,7 @@ function MealDetailDialog({
 
         {!meal ? null : (
           <div className="flex flex-col gap-5">
-            <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-              <MealImageGallery photoUrls={meal.photoUrls} alt={`${meal.userName} 식단 사진`} />
-
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3 rounded-xl bg-muted/50 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <Badge variant="secondary">{MEAL_TYPE_LABEL[meal.mealType]}</Badge>
@@ -285,6 +283,8 @@ function MealDetailDialog({
                   </div>
                 </div>
               </div>
+
+              <MealImageGallery photoUrls={meal.photoUrls} alt={`${meal.userName} 식단 사진`} />
             </div>
 
             <Separator />
