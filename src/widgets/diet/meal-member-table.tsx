@@ -13,6 +13,7 @@ import {
   MessageSquarePlus,
   UtensilsCrossed,
 } from "lucide-react"
+import { ImageGallery } from "@/shared/ui/image-gallery"
 import { useMemberMeals, useTodayMeals, useUpdateMealFeedback } from "@/features/diet"
 import { useEnsureChatRoom, useSendChatMessage } from "@/features/chat"
 import type { MealType, MealWithProfile } from "@/entities/meal"
@@ -90,55 +91,7 @@ function formatFullDate(dateStr: string): string {
   })
 }
 
-function MealImageGallery({ photoUrls, alt }: { photoUrls: string[]; alt: string }) {
-  const [index, setIndex] = useState(0)
 
-  if (photoUrls.length === 0) {
-    return (
-      <div className="overflow-hidden rounded-xl bg-muted">
-        <div className="flex aspect-video items-center justify-center bg-primary/5 text-muted-foreground">
-          <div className="flex flex-col items-center gap-2">
-            <Camera className="size-6 text-primary" />
-            <p className="text-sm">등록된 식단 사진이 없습니다</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative aspect-video overflow-hidden rounded-xl bg-muted">
-      <Image
-        src={photoUrls[index]}
-        alt={alt}
-        fill
-        className="object-contain"
-        unoptimized
-      />
-      {photoUrls.length > 1 && (
-        <>
-          <button
-            type="button"
-            onClick={() => setIndex((i) => (i - 1 + photoUrls.length) % photoUrls.length)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setIndex((i) => (i + 1) % photoUrls.length)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white hover:bg-black/70"
-          >
-            <ChevronRight className="size-4" />
-          </button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-0.5 text-xs text-white">
-            {index + 1} / {photoUrls.length}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
 
 function formatMacros(meal: { carbs: number | null; protein: number | null; fat: number | null; fiber: number | null }) {
   return [
@@ -209,7 +162,7 @@ function MealDetailDialog({
         {!meal ? null : (
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-4">
-              <MealImageGallery photoUrls={meal.photoUrls} alt={`${meal.userName} 식단 사진`} />
+              <ImageGallery urls={meal.photoUrls} alt={`${meal.userName} 식단 사진`} emptyIcon={<Camera className="size-6 text-primary" />} emptyText="등록된 식단 사진이 없습니다" />
               <div className="flex flex-col gap-3 rounded-xl bg-muted/50 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <Badge variant="secondary">{MEAL_TYPE_LABEL[meal.mealType]}</Badge>

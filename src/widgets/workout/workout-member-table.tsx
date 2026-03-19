@@ -14,6 +14,7 @@ import {
   MessageSquareText,
   Timer,
 } from "lucide-react"
+import { ImageGallery } from "@/shared/ui/image-gallery"
 import { toast } from "sonner"
 import type { Workout, WorkoutWithProfile } from "@/entities/workout"
 import {
@@ -157,50 +158,12 @@ function WorkoutDetailDialog({
         {!workout ? null : (
           <div className="space-y-5">
             <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="relative overflow-hidden rounded-2xl bg-muted">
-                {workout.mediaUrls.length > 0 ? (
-                  <>
-                    <Image
-                      src={workout.mediaUrls[imageIndex]}
-                      alt={`${workout.userName} 운동 인증 ${imageIndex + 1}`}
-                      width={960}
-                      height={720}
-                      className="aspect-video w-full object-cover"
-                      unoptimized
-                    />
-                    {workout.mediaUrls.length > 1 && (
-                      <>
-                        <button
-                          type="button"
-                          className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-opacity hover:bg-black/70 disabled:opacity-0"
-                          onClick={(e) => { e.stopPropagation(); setImageIndex((prev) => prev - 1) }}
-                          disabled={imageIndex === 0}
-                        >
-                          <ChevronLeft className="size-5" />
-                        </button>
-                        <button
-                          type="button"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-opacity hover:bg-black/70 disabled:opacity-0"
-                          onClick={(e) => { e.stopPropagation(); setImageIndex((prev) => prev + 1) }}
-                          disabled={imageIndex === workout.mediaUrls.length - 1}
-                        >
-                          <ChevronRight className="size-5" />
-                        </button>
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2.5 py-1 text-xs text-white">
-                          {imageIndex + 1} / {workout.mediaUrls.length}
-                        </div>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex aspect-video items-center justify-center bg-primary/5 text-muted-foreground">
-                    <div className="flex flex-col items-center gap-2">
-                      <Dumbbell className="size-6 text-primary" />
-                      <p className="text-sm">등록된 운동 인증 미디어가 없습니다</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ImageGallery
+                urls={workout.mediaUrls}
+                alt={`${workout.userName} 운동 인증 사진`}
+                emptyIcon={<Dumbbell className="size-6 text-primary" />}
+                emptyText="등록된 운동 인증 미디어가 없습니다"
+              />
 
               <div className="space-y-3 rounded-2xl bg-muted/50 p-4">
                 <div className="flex items-center justify-between gap-2">
