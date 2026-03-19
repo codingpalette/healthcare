@@ -267,7 +267,7 @@ function EquipmentQrDialog({
 }) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const qrUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/equipment?id=${equipment.id}`
+    ? `${window.location.origin}/guide?tab=equipment&id=${equipment.id}`
     : ""
 
   const handleDownload = useCallback(() => {

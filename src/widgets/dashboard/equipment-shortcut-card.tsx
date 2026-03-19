@@ -34,7 +34,7 @@ export function EquipmentShortcutCard() {
           </p>
         </div>
         <Link
-          href="/equipment"
+          href="/guide"
           className={cn(
             buttonVariants({ size: "sm", variant: "outline" }),
             "w-full"

@@ -3,9 +3,9 @@
 import type { LucideIcon } from "lucide-react"
 import {
   BarChart3,
+  BookOpen,
   CalendarCheck,
   ClipboardList,
-  Dumbbell,
   LayoutDashboard,
   MessageCircle,
   Megaphone,
@@ -13,7 +13,6 @@ import {
   MessagesSquare,
   Utensils,
   Users,
-  Wrench,
 } from "lucide-react"
 import type { Profile } from "@/entities/user"
 
@@ -29,8 +28,7 @@ const commonNav: NavigationItem[] = [
   { title: "기록", href: "/records", icon: ClipboardList },
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
   // { title: "Q&A", href: "/qna", icon: MessageCircle },
-  { title: "기구 가이드", href: "/equipment", icon: Wrench },
-  { title: "운동 가이드", href: "/exercise-guide", icon: Dumbbell },
+  { title: "가이드", href: "/guide", icon: BookOpen },
   { title: "커뮤니티", href: "/community", icon: MessageCircleHeart },
   { title: "공지사항", href: "/notices", icon: Megaphone },
 ]
@@ -38,7 +36,6 @@ const commonNav: NavigationItem[] = [
 const trainerNav: NavigationItem[] = [
   { title: "회원 관리", href: "/members", icon: Users },
   { title: "음식 DB 관리", href: "/food-items", icon: Utensils },
-  { title: "운동 DB 관리", href: "/exercise-guide", icon: Dumbbell },
   { title: "통계", href: "/stats", icon: BarChart3 },
 ]
 

@@ -267,7 +267,7 @@ function ExerciseItemQrDialog({
 }) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const qrUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/exercise-guide?id=${exerciseItem.id}`
+    ? `${window.location.origin}/guide?tab=exercise&id=${exerciseItem.id}`
     : ""
 
   const handleDownload = useCallback(() => {
