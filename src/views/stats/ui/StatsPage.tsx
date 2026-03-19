@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/ui"
-import { DailyAccessChart } from "@/widgets/stats"
+import { DailyAccessChart, AttendanceStats, MemberStatsWidget } from "@/widgets/stats"
 
 const TABS = [
   { value: "access", label: "접속" },
@@ -47,11 +47,11 @@ export function StatsPage() {
         </TabsContent>
 
         <TabsContent value="attendance" className="mt-6">
-          <p className="text-muted-foreground">출석 통계 준비 중...</p>
+          <AttendanceStats />
         </TabsContent>
 
         <TabsContent value="members" className="mt-6">
-          <p className="text-muted-foreground">회원 통계 준비 중...</p>
+          <MemberStatsWidget />
         </TabsContent>
 
         <TabsContent value="diet" className="mt-6">
