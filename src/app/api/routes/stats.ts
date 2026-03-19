@@ -375,8 +375,8 @@ statsRoutes.get("/diet", async (c) => {
   // 기간 내 식단 데이터 조회
   const { data: mealData, error: mealError } = await adminSupabase
     .from("meals")
-    .select("user_id, meal_date, calories, carbs, protein, fat")
-    .gte("meal_date", toDateString(startDate))
+    .select("user_id, date, calories, carbs, protein, fat")
+    .gte("date", toDateString(startDate))
 
   if (mealError) return c.json({ error: mealError.message }, 400)
 
@@ -391,7 +391,7 @@ statsRoutes.get("/diet", async (c) => {
   const memberMap = new Map<string, MemberAgg>()
 
   for (const row of rows) {
-    const dateStr = row.meal_date as string
+    const dateStr = row.date as string
     if (!dateMap.has(dateStr)) dateMap.set(dateStr, { users: new Set(), calories: [], carbs: [], protein: [], fat: [] })
     const agg = dateMap.get(dateStr)!
     agg.users.add(row.user_id as string)
