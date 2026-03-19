@@ -1,8 +1,8 @@
 "use client"
 
-import Image from "next/image"
 import { useMemo, useState } from "react"
 import { BellRing, Save, ScanSearch, Settings2, Users } from "lucide-react"
+import { ImageGallery } from "@/shared/ui/image-gallery"
 import { toast } from "sonner"
 import type { InbodyMemberOverview } from "@/entities/inbody"
 import {
@@ -175,20 +175,15 @@ function MemberDetailDialog({
                   {records.map((record) => (
                     <div key={record.id} className="rounded-xl border bg-card p-4">
                       <div className="flex flex-col gap-4 md:flex-row">
-                        {record.photoUrls[0] ? (
-                          <Image
-                            src={record.photoUrls[0]}
+                        <div className="w-full md:w-40 shrink-0">
+                          <ImageGallery
+                            urls={record.photoUrls}
                             alt="회원 인바디 사진"
-                            width={144}
-                            height={144}
-                            className="h-36 w-full rounded-xl object-cover md:w-40"
-                            unoptimized
+                            emptyIcon={<ScanSearch className="size-7 text-primary" />}
+                            emptyText="등록된 인바디 사진이 없습니다"
+                            aspectClassName="aspect-square"
                           />
-                        ) : (
-                          <div className="flex h-36 w-full items-center justify-center rounded-xl bg-primary/5 md:w-40">
-                            <ScanSearch className="size-7 text-primary" />
-                          </div>
-                        )}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary">{formatMeasureDate(record.measuredDate)}</Badge>

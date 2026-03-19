@@ -1,8 +1,8 @@
 "use client"
 
-import Image from "next/image"
 import { useMemo, useState } from "react"
 import { BellRing, Pencil, Plus, ScanLine, Trash2, Weight } from "lucide-react"
+import { ImageGallery } from "@/shared/ui/image-gallery"
 import type { InbodyRecord } from "@/entities/inbody"
 import { useDeleteInbodyRecord, useMyInbodyRecords, useMyInbodyReminder } from "@/features/inbody"
 import { formatReminderText, getMonthRange, getNextReminderDate } from "@/shared/lib/inbody"
@@ -129,20 +129,15 @@ export function InbodyRecordList() {
               {records.map((record) => (
                 <div key={record.id} className="rounded-2xl border bg-card p-4">
                   <div className="flex flex-col gap-4 md:flex-row">
-                    {record.photoUrls[0] ? (
-                      <Image
-                        src={record.photoUrls[0]}
+                    <div className="w-full md:w-48 shrink-0">
+                      <ImageGallery
+                        urls={record.photoUrls}
                         alt="인바디 기록 사진"
-                        width={180}
-                        height={180}
-                        className="h-40 w-full rounded-xl object-cover md:w-48"
-                        unoptimized
+                        emptyIcon={<ScanLine className="size-8 text-primary" />}
+                        emptyText="등록된 인바디 사진이 없습니다"
+                        aspectClassName="aspect-square"
                       />
-                    ) : (
-                      <div className="flex h-40 w-full items-center justify-center rounded-xl bg-primary/5 md:w-48">
-                        <ScanLine className="size-8 text-primary" />
-                      </div>
-                    )}
+                    </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
