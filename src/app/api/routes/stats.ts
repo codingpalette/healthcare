@@ -491,8 +491,8 @@ statsRoutes.get("/workout", async (c) => {
   // 기간 내 운동 데이터 조회
   const { data: workoutData, error: workoutError } = await adminSupabase
     .from("workouts")
-    .select("user_id, workout_date, exercise_name")
-    .gte("workout_date", toDateString(startDate))
+    .select("user_id, date, exercise_name")
+    .gte("date", toDateString(startDate))
 
   if (workoutError) return c.json({ error: workoutError.message }, 400)
 
@@ -507,7 +507,7 @@ statsRoutes.get("/workout", async (c) => {
   const memberMap = new Map<string, MemberWorkoutAgg>()
 
   for (const row of rows) {
-    const dateStr = row.workout_date as string
+    const dateStr = row.date as string
     const userId = row.user_id as string
     const exerciseName = (row.exercise_name as string) ?? ""
 
