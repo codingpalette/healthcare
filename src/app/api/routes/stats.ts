@@ -86,3 +86,535 @@ statsRoutes.get("/daily-access", async (c) => {
 
   return c.json({ today, yesterday, data: chartData })
 })
+
+/** 출석 통계 조회 (트레이너 전용) */
+statsRoutes.get("/attendance", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const daysParam = c.req.query("days")
+  let days = daysParam ? parseInt(daysParam, 10) : 30
+  if (isNaN(days) || days < 1) days = 1
+  if (days > 90) days = 90
+
+  const adminSupabase = createAdminSupabase()
+  const now = new Date()
+
+  const startDate = new Date(now)
+  startDate.setUTCDate(startDate.getUTCDate() - (days - 1))
+  startDate.setUTCHours(0, 0, 0, 0)
+
+  // 전체 회원 수 조회
+  const { data: memberData, error: memberError } = await adminSupabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "member")
+    .is("deleted_at", null)
+
+  if (memberError) return c.json({ error: memberError.message }, 400)
+  const totalMembers = (memberData ?? []).length
+
+  // 기간 내 출석 데이터 조회
+  const { data: attendanceData, error: attendanceError } = await adminSupabase
+    .from("attendance")
+    .select("user_id, check_in_at")
+    .gte("check_in_at", startDate.toISOString())
+
+  if (attendanceError) return c.json({ error: attendanceError.message }, 400)
+
+  const rows = attendanceData ?? []
+
+  // 날짜별 고유 user_id 집계
+  const dateUserMap = new Map<string, Set<string>>()
+  // 요일별(0=일~6=토) user_id Set 집계
+  const weekdayUserMap = new Map<number, Map<string, Set<string>>>() // weekday -> date -> users
+  // 회원별 출석일수
+  const memberAttendanceMap = new Map<string, Set<string>>() // userId -> Set<date>
+
+  for (const row of rows) {
+    if (!row.check_in_at) continue
+    const dateStr = (row.check_in_at as string).split("T")[0]
+    const d = new Date(row.check_in_at as string)
+    const weekday = d.getUTCDay()
+
+    if (!dateUserMap.has(dateStr)) dateUserMap.set(dateStr, new Set())
+    dateUserMap.get(dateStr)!.add(row.user_id as string)
+
+    if (!weekdayUserMap.has(weekday)) weekdayUserMap.set(weekday, new Map())
+    const wMap = weekdayUserMap.get(weekday)!
+    if (!wMap.has(dateStr)) wMap.set(dateStr, new Set())
+    wMap.get(dateStr)!.add(row.user_id as string)
+
+    if (!memberAttendanceMap.has(row.user_id as string)) memberAttendanceMap.set(row.user_id as string, new Set())
+    memberAttendanceMap.get(row.user_id as string)!.add(dateStr)
+  }
+
+  // dailyData
+  const allDates = generateDateRange(startDate, now)
+  const dailyData = allDates.map((date) => {
+    const count = dateUserMap.get(date)?.size ?? 0
+    return { date, count, rate: totalMembers > 0 ? Math.round((count / totalMembers) * 100) : 0 }
+  })
+
+  // weekdayData
+  const weekdayData = Array.from({ length: 7 }, (_, wd) => {
+    const wMap = weekdayUserMap.get(wd)
+    if (!wMap || wMap.size === 0) return { weekday: wd, avgCount: 0 }
+    const totalCount = Array.from(wMap.values()).reduce((sum, s) => sum + s.size, 0)
+    return { weekday: wd, avgCount: Math.round(totalCount / wMap.size) }
+  })
+
+  // 오늘/어제
+  const todayStr = toDateString(now)
+  const yesterdayDate = new Date(now)
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1)
+  const yesterdayStr = toDateString(yesterdayDate)
+  const today = dateUserMap.get(todayStr)?.size ?? 0
+  const yesterday = dateUserMap.get(yesterdayStr)?.size ?? 0
+
+  // 회원별 출석 랭킹 (상위 20명)
+  const memberRankingRaw = Array.from(memberAttendanceMap.entries()).map(([userId, dateSet]) => ({
+    userId,
+    totalDays: dateSet.size,
+    attendanceRate: Math.round((dateSet.size / days) * 100),
+  }))
+  memberRankingRaw.sort((a, b) => b.totalDays - a.totalDays)
+  const top20 = memberRankingRaw.slice(0, 20)
+
+  // 프로필 조회
+  const top20Ids = top20.map((r) => r.userId)
+  const { data: profileData } = await adminSupabase
+    .from("profiles")
+    .select("id, name")
+    .in("id", top20Ids)
+
+  const profileMap = new Map((profileData ?? []).map((p) => [p.id, p.name as string]))
+  const memberRanking = top20.map((r) => ({
+    userId: r.userId,
+    name: profileMap.get(r.userId) ?? "",
+    attendanceRate: r.attendanceRate,
+    totalDays: r.totalDays,
+  }))
+
+  return c.json({ today, yesterday, totalMembers, dailyData, weekdayData, memberRanking })
+})
+
+/** 회원 통계 조회 (트레이너 전용) */
+statsRoutes.get("/members", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const daysParam = c.req.query("days")
+  let days = daysParam ? parseInt(daysParam, 10) : 90
+  if (isNaN(days) || days < 1) days = 1
+  if (days > 365) days = 365
+
+  const adminSupabase = createAdminSupabase()
+  const now = new Date()
+
+  // 전체 회원 조회
+  const { data: allMembers, error: memberError } = await adminSupabase
+    .from("profiles")
+    .select("id, name, created_at")
+    .eq("role", "member")
+    .is("deleted_at", null)
+
+  if (memberError) return c.json({ error: memberError.message }, 400)
+
+  const members = allMembers ?? []
+  const totalMembers = members.length
+
+  // 최근 30일 활성 회원 판단을 위한 출석 데이터
+  const thirtyDaysAgo = new Date(now)
+  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30)
+  thirtyDaysAgo.setUTCHours(0, 0, 0, 0)
+
+  const { data: recentAttendance } = await adminSupabase
+    .from("attendance")
+    .select("user_id, check_in_at")
+    .gte("check_in_at", thirtyDaysAgo.toISOString())
+
+  const activeUserIds = new Set((recentAttendance ?? []).map((r) => r.user_id as string))
+  const activeMembers = activeUserIds.size
+  const inactiveMembers = totalMembers - activeMembers
+
+  // 이번달/지난달 신규 회원
+  const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  const lastMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+  const newThisMonth = members.filter((m) => new Date(m.created_at as string) >= thisMonthStart).length
+  const newLastMonth = members.filter((m) => {
+    const d = new Date(m.created_at as string)
+    return d >= lastMonthStart && d < thisMonthStart
+  }).length
+
+  // signupTrend
+  let signupTrend: { label: string; count: number }[]
+  if (days <= 30) {
+    const startDate = new Date(now)
+    startDate.setUTCDate(startDate.getUTCDate() - (days - 1))
+    startDate.setUTCHours(0, 0, 0, 0)
+    const allDates = generateDateRange(startDate, now)
+    const countMap = new Map<string, number>()
+    for (const m of members) {
+      const d = toDateString(new Date(m.created_at as string))
+      if (allDates.includes(d)) countMap.set(d, (countMap.get(d) ?? 0) + 1)
+    }
+    signupTrend = allDates.map((date) => ({ label: date, count: countMap.get(date) ?? 0 }))
+  } else {
+    const monthMap = new Map<string, number>()
+    const startDate = new Date(now)
+    startDate.setUTCDate(startDate.getUTCDate() - (days - 1))
+    for (const m of members) {
+      const d = new Date(m.created_at as string)
+      if (d >= startDate) {
+        const label = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`
+        monthMap.set(label, (monthMap.get(label) ?? 0) + 1)
+      }
+    }
+    signupTrend = Array.from(monthMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([label, count]) => ({ label, count }))
+  }
+
+  // retentionTrend: 최근 6개월 월별 유지율
+  const retentionTrend: { month: string; retentionRate: number }[] = []
+  for (let i = 5; i >= 0; i--) {
+    const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))
+    const monthLabel = `${monthDate.getUTCFullYear()}-${String(monthDate.getUTCMonth() + 1).padStart(2, "0")}`
+    const monthStart = monthDate
+    const monthEnd = new Date(Date.UTC(monthDate.getUTCFullYear(), monthDate.getUTCMonth() + 1, 1))
+    const membersAtMonth = members.filter((m) => new Date(m.created_at as string) < monthEnd).length
+    const { data: monthAttendance } = await adminSupabase
+      .from("attendance")
+      .select("user_id")
+      .gte("check_in_at", monthStart.toISOString())
+      .lt("check_in_at", monthEnd.toISOString())
+    const activeThisMonth = new Set((monthAttendance ?? []).map((r) => r.user_id as string)).size
+    retentionTrend.push({
+      month: monthLabel,
+      retentionRate: membersAtMonth > 0 ? Math.round((activeThisMonth / membersAtMonth) * 100) : 0,
+    })
+  }
+
+  // inactiveList: 비활성 회원 마지막 출석일 (상위 20명)
+  const inactiveMemberList = members.filter((m) => !activeUserIds.has(m.id as string))
+  const inactiveIds = inactiveMemberList.map((m) => m.id as string)
+  let inactiveList: { userId: string; name: string; lastAttendance: string | null }[] = []
+  if (inactiveIds.length > 0) {
+    const { data: lastAttendanceData } = await adminSupabase
+      .from("attendance")
+      .select("user_id, check_in_at")
+      .in("user_id", inactiveIds)
+      .order("check_in_at", { ascending: false })
+    const lastAttendanceMap = new Map<string, string>()
+    for (const r of lastAttendanceData ?? []) {
+      if (!lastAttendanceMap.has(r.user_id as string)) {
+        lastAttendanceMap.set(r.user_id as string, (r.check_in_at as string).split("T")[0])
+      }
+    }
+    inactiveList = inactiveMemberList
+      .slice(0, 20)
+      .map((m) => ({ userId: m.id as string, name: m.name as string, lastAttendance: lastAttendanceMap.get(m.id as string) ?? null }))
+  }
+
+  return c.json({
+    totalMembers,
+    activeMembers,
+    inactiveMembers,
+    newThisMonth,
+    newLastMonth,
+    signupTrend,
+    retentionTrend,
+    inactiveList,
+  })
+})
+
+/** 식단 통계 조회 (트레이너 전용) */
+statsRoutes.get("/diet", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const daysParam = c.req.query("days")
+  let days = daysParam ? parseInt(daysParam, 10) : 30
+  if (isNaN(days) || days < 1) days = 1
+  if (days > 90) days = 90
+
+  const adminSupabase = createAdminSupabase()
+  const now = new Date()
+
+  const startDate = new Date(now)
+  startDate.setUTCDate(startDate.getUTCDate() - (days - 1))
+  startDate.setUTCHours(0, 0, 0, 0)
+
+  // 전체 회원 수
+  const { data: memberData, error: memberError } = await adminSupabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "member")
+    .is("deleted_at", null)
+
+  if (memberError) return c.json({ error: memberError.message }, 400)
+  const totalMembers = (memberData ?? []).length
+
+  // 기간 내 식단 데이터 조회
+  const { data: mealData, error: mealError } = await adminSupabase
+    .from("meals")
+    .select("user_id, meal_date, calories, carbs, protein, fat")
+    .gte("meal_date", toDateString(startDate))
+
+  if (mealError) return c.json({ error: mealError.message }, 400)
+
+  const rows = mealData ?? []
+
+  // 날짜별 집계
+  type DayAgg = { users: Set<string>; calories: number[]; carbs: number[]; protein: number[]; fat: number[] }
+  const dateMap = new Map<string, DayAgg>()
+
+  // 회원별 집계
+  type MemberAgg = { submittedDates: Set<string>; totalCalories: number; lastDate: string }
+  const memberMap = new Map<string, MemberAgg>()
+
+  for (const row of rows) {
+    const dateStr = row.meal_date as string
+    if (!dateMap.has(dateStr)) dateMap.set(dateStr, { users: new Set(), calories: [], carbs: [], protein: [], fat: [] })
+    const agg = dateMap.get(dateStr)!
+    agg.users.add(row.user_id as string)
+    if (row.calories != null) agg.calories.push(Number(row.calories))
+    if (row.carbs != null) agg.carbs.push(Number(row.carbs))
+    if (row.protein != null) agg.protein.push(Number(row.protein))
+    if (row.fat != null) agg.fat.push(Number(row.fat))
+
+    if (!memberMap.has(row.user_id as string)) memberMap.set(row.user_id as string, { submittedDates: new Set(), totalCalories: 0, lastDate: "" })
+    const magg = memberMap.get(row.user_id as string)!
+    magg.submittedDates.add(dateStr)
+    if (row.calories != null) magg.totalCalories += Number(row.calories)
+    if (!magg.lastDate || dateStr > magg.lastDate) magg.lastDate = dateStr
+  }
+
+  const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0
+
+  const allDates = generateDateRange(startDate, now)
+  const dailyData = allDates.map((date) => {
+    const agg = dateMap.get(date)
+    const submitCount = agg?.users.size ?? 0
+    return {
+      date,
+      submitCount,
+      submitRate: totalMembers > 0 ? Math.round((submitCount / totalMembers) * 100) : 0,
+      avgCalories: avg(agg?.calories ?? []),
+      avgCarbs: avg(agg?.carbs ?? []),
+      avgProtein: avg(agg?.protein ?? []),
+      avgFat: avg(agg?.fat ?? []),
+    }
+  })
+
+  // memberStats 상위 20명
+  const memberStatsRaw = Array.from(memberMap.entries()).map(([userId, magg]) => ({
+    userId,
+    submitRate: Math.round((magg.submittedDates.size / days) * 100),
+    avgCalories: magg.submittedDates.size > 0 ? Math.round(magg.totalCalories / magg.submittedDates.size) : 0,
+    lastDate: magg.lastDate,
+  }))
+  memberStatsRaw.sort((a, b) => b.submitRate - a.submitRate)
+  const top20 = memberStatsRaw.slice(0, 20)
+
+  const { data: profileData } = await adminSupabase
+    .from("profiles")
+    .select("id, name")
+    .in("id", top20.map((r) => r.userId))
+
+  const profileMap = new Map((profileData ?? []).map((p) => [p.id, p.name as string]))
+  const memberStats = top20.map((r) => ({ ...r, name: profileMap.get(r.userId) ?? "" }))
+
+  return c.json({ totalMembers, dailyData, memberStats })
+})
+
+/** 운동 통계 조회 (트레이너 전용) */
+statsRoutes.get("/workout", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const daysParam = c.req.query("days")
+  let days = daysParam ? parseInt(daysParam, 10) : 30
+  if (isNaN(days) || days < 1) days = 1
+  if (days > 90) days = 90
+
+  const adminSupabase = createAdminSupabase()
+  const now = new Date()
+
+  const startDate = new Date(now)
+  startDate.setUTCDate(startDate.getUTCDate() - (days - 1))
+  startDate.setUTCHours(0, 0, 0, 0)
+
+  // 전체 회원 수
+  const { data: memberData, error: memberError } = await adminSupabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "member")
+    .is("deleted_at", null)
+
+  if (memberError) return c.json({ error: memberError.message }, 400)
+  const totalMembers = (memberData ?? []).length
+
+  // 기간 내 운동 데이터 조회
+  const { data: workoutData, error: workoutError } = await adminSupabase
+    .from("workouts")
+    .select("user_id, workout_date, exercise_name")
+    .gte("workout_date", toDateString(startDate))
+
+  if (workoutError) return c.json({ error: workoutError.message }, 400)
+
+  const rows = workoutData ?? []
+
+  // 날짜별 고유 user_id
+  const dateUserMap = new Map<string, Set<string>>()
+  // 운동 종목별 빈도
+  const exerciseCountMap = new Map<string, number>()
+  // 회원별 집계
+  type MemberWorkoutAgg = { recordedDates: Set<string>; exercises: Map<string, number>; lastDate: string }
+  const memberMap = new Map<string, MemberWorkoutAgg>()
+
+  for (const row of rows) {
+    const dateStr = row.workout_date as string
+    const userId = row.user_id as string
+    const exerciseName = (row.exercise_name as string) ?? ""
+
+    if (!dateUserMap.has(dateStr)) dateUserMap.set(dateStr, new Set())
+    dateUserMap.get(dateStr)!.add(userId)
+
+    if (exerciseName) exerciseCountMap.set(exerciseName, (exerciseCountMap.get(exerciseName) ?? 0) + 1)
+
+    if (!memberMap.has(userId)) memberMap.set(userId, { recordedDates: new Set(), exercises: new Map(), lastDate: "" })
+    const magg = memberMap.get(userId)!
+    magg.recordedDates.add(dateStr)
+    if (exerciseName) magg.exercises.set(exerciseName, (magg.exercises.get(exerciseName) ?? 0) + 1)
+    if (!magg.lastDate || dateStr > magg.lastDate) magg.lastDate = dateStr
+  }
+
+  const allDates = generateDateRange(startDate, now)
+  const dailyData = allDates.map((date) => {
+    const count = dateUserMap.get(date)?.size ?? 0
+    return { date, count, recordRate: totalMembers > 0 ? Math.round((count / totalMembers) * 100) : 0 }
+  })
+
+  // exerciseDistribution 상위 10개
+  const exerciseDistribution = Array.from(exerciseCountMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count }))
+
+  // memberStats 상위 20명
+  const memberStatsRaw = Array.from(memberMap.entries()).map(([userId, magg]) => {
+    const favoriteExercise = Array.from(magg.exercises.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ""
+    return {
+      userId,
+      recordRate: Math.round((magg.recordedDates.size / days) * 100),
+      totalWorkouts: rows.filter((r) => r.user_id === userId).length,
+      favoriteExercise,
+      lastDate: magg.lastDate,
+    }
+  })
+  memberStatsRaw.sort((a, b) => b.recordRate - a.recordRate)
+  const top20 = memberStatsRaw.slice(0, 20)
+
+  const { data: profileData } = await adminSupabase
+    .from("profiles")
+    .select("id, name")
+    .in("id", top20.map((r) => r.userId))
+
+  const profileMap = new Map((profileData ?? []).map((p) => [p.id, p.name as string]))
+  const memberStats = top20.map((r) => ({ ...r, name: profileMap.get(r.userId) ?? "" }))
+
+  return c.json({ totalMembers, dailyData, exerciseDistribution, memberStats })
+})
+
+/** 인바디 통계 조회 (트레이너 전용) */
+statsRoutes.get("/inbody", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer") {
+    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  }
+
+  const monthsParam = c.req.query("months")
+  let months = monthsParam ? parseInt(monthsParam, 10) : 6
+  if (isNaN(months) || months < 1) months = 1
+  if (months > 12) months = 12
+
+  const adminSupabase = createAdminSupabase()
+  const now = new Date()
+
+  // 이번 달 1일
+  const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  const thisMonthStartStr = toDateString(thisMonthStart)
+
+  // months개월 전 시작일
+  const startMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1))
+  const startMonthStr = toDateString(startMonthDate)
+
+  // 기간 내 인바디 데이터 조회
+  const { data: inbodyData, error: inbodyError } = await adminSupabase
+    .from("inbody_records")
+    .select("user_id, measured_date, weight, skeletal_muscle_mass, body_fat_percentage")
+    .gte("measured_date", startMonthStr)
+    .order("measured_date", { ascending: true })
+
+  if (inbodyError) return c.json({ error: inbodyError.message }, 400)
+
+  const rows = inbodyData ?? []
+
+  // 이번 달 측정 회원 수
+  const measuredThisMonth = new Set(
+    rows.filter((r) => (r.measured_date as string) >= thisMonthStartStr).map((r) => r.user_id as string)
+  ).size
+
+  // monthlyAvgTrend: measured_date의 YYYY-MM 그룹별 평균
+  type MonthAgg = { weight: number[]; skeletalMuscleMass: number[]; bodyFatPercentage: number[] }
+  const monthAggMap = new Map<string, MonthAgg>()
+  for (const row of rows) {
+    const month = (row.measured_date as string).substring(0, 7)
+    if (!monthAggMap.has(month)) monthAggMap.set(month, { weight: [], skeletalMuscleMass: [], bodyFatPercentage: [] })
+    const agg = monthAggMap.get(month)!
+    if (row.weight != null) agg.weight.push(Number(row.weight))
+    if (row.skeletal_muscle_mass != null) agg.skeletalMuscleMass.push(Number(row.skeletal_muscle_mass))
+    if (row.body_fat_percentage != null) agg.bodyFatPercentage.push(Number(row.body_fat_percentage))
+  }
+
+  const avg = (arr: number[]) => arr.length > 0 ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : null
+
+  const monthlyAvgTrend = Array.from(monthAggMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, agg]) => ({
+      month,
+      avgWeight: avg(agg.weight),
+      avgSkeletalMuscleMass: avg(agg.skeletalMuscleMass),
+      avgBodyFatPercentage: avg(agg.bodyFatPercentage),
+    }))
+
+  // memberOverview: 회원별 최신 기록
+  const memberLatestMap = new Map<string, typeof rows[0]>()
+  for (const row of rows) {
+    const userId = row.user_id as string
+    const existing = memberLatestMap.get(userId)
+    if (!existing || (row.measured_date as string) > (existing.measured_date as string)) {
+      memberLatestMap.set(userId, row)
+    }
+  }
+
+  const memberOverview = Array.from(memberLatestMap.entries()).map(([userId, row]) => ({
+    userId,
+    measuredDate: row.measured_date as string,
+    weight: row.weight != null ? Number(row.weight) : null,
+    skeletalMuscleMass: row.skeletal_muscle_mass != null ? Number(row.skeletal_muscle_mass) : null,
+    bodyFatPercentage: row.body_fat_percentage != null ? Number(row.body_fat_percentage) : null,
+  }))
+
+  return c.json({ measuredThisMonth, monthlyAvgTrend, memberOverview })
+})
