@@ -127,3 +127,8 @@
     @apply font-sans;
     }
 }
+
+/* Sonner 토스트: iOS PWA safe-area 대응 */
+[data-sonner-toaster][data-y-position="top"] {
+  top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+}
