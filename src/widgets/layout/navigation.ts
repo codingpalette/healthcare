@@ -38,6 +38,7 @@ const commonNav: NavigationItem[] = [
 const trainerNav: NavigationItem[] = [
   { title: "회원 관리", href: "/members", icon: Users },
   { title: "음식 DB 관리", href: "/food-items", icon: Utensils },
+  { title: "운동 DB 관리", href: "/exercise-guide", icon: Dumbbell },
   { title: "통계", href: "/stats", icon: BarChart3 },
 ]
 
