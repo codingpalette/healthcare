@@ -146,7 +146,10 @@ export function AppSidebar({ profile }: AppSidebarProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem
-                    onClick={() => router.push("/settings")}
+                    onClick={() => {
+                      setOpenMobile(false)
+                      router.push("/settings")
+                    }}
                   >
                     <Settings className="size-4" />
                     설정
@@ -154,7 +157,10 @@ export function AppSidebar({ profile }: AppSidebarProps) {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onClick={() => {
+                      setOpenMobile(false)
+                      handleLogout()
+                    }}>
                     <LogOut className="size-4" />
                     로그아웃
                   </DropdownMenuItem>
