@@ -251,8 +251,8 @@ statsRoutes.get("/members", async (c) => {
     return d >= lastMonthStart && d < thisMonthStart
   }).length
 
-  // signupTrend
-  let signupTrend: { label: string; count: number }[]
+  // signupTrend - field renamed from label to date
+  let signupTrend: { date: string; count: number }[]
   if (days <= 30) {
     const startDate = new Date(now)
     startDate.setUTCDate(startDate.getUTCDate() - (days - 1))
@@ -263,7 +263,7 @@ statsRoutes.get("/members", async (c) => {
       const d = toDateString(new Date(m.created_at as string))
       if (allDates.includes(d)) countMap.set(d, (countMap.get(d) ?? 0) + 1)
     }
-    signupTrend = allDates.map((date) => ({ label: date, count: countMap.get(date) ?? 0 }))
+    signupTrend = allDates.map((date) => ({ date, count: countMap.get(date) ?? 0 }))
   } else {
     const monthMap = new Map<string, number>()
     const startDate = new Date(now)
@@ -277,26 +277,36 @@ statsRoutes.get("/members", async (c) => {
     }
     signupTrend = Array.from(monthMap.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([label, count]) => ({ label, count }))
+      .map(([date, count]) => ({ date, count }))
   }
 
   // retentionTrend: 최근 6개월 월별 유지율
-  const retentionTrend: { month: string; retentionRate: number }[] = []
+  // 성능 개선: 6개월치 출석 데이터를 한 번에 조회 후 JS에서 월별 집계
+  const sixMonthsAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1))
+  const { data: allRetentionAttendance } = await adminSupabase
+    .from("attendance")
+    .select("user_id, check_in_at")
+    .gte("check_in_at", sixMonthsAgo.toISOString())
+
+  // 월별 활성 user_id Set 구성
+  const monthActiveMap = new Map<string, Set<string>>()
+  for (const r of allRetentionAttendance ?? []) {
+    if (!r.check_in_at) continue
+    const monthKey = (r.check_in_at as string).substring(0, 7)
+    if (!monthActiveMap.has(monthKey)) monthActiveMap.set(monthKey, new Set())
+    monthActiveMap.get(monthKey)!.add(r.user_id as string)
+  }
+
+  const retentionTrend: { month: string; rate: number }[] = []
   for (let i = 5; i >= 0; i--) {
     const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))
     const monthLabel = `${monthDate.getUTCFullYear()}-${String(monthDate.getUTCMonth() + 1).padStart(2, "0")}`
-    const monthStart = monthDate
     const monthEnd = new Date(Date.UTC(monthDate.getUTCFullYear(), monthDate.getUTCMonth() + 1, 1))
     const membersAtMonth = members.filter((m) => new Date(m.created_at as string) < monthEnd).length
-    const { data: monthAttendance } = await adminSupabase
-      .from("attendance")
-      .select("user_id")
-      .gte("check_in_at", monthStart.toISOString())
-      .lt("check_in_at", monthEnd.toISOString())
-    const activeThisMonth = new Set((monthAttendance ?? []).map((r) => r.user_id as string)).size
+    const activeThisMonth = monthActiveMap.get(monthLabel)?.size ?? 0
     retentionTrend.push({
       month: monthLabel,
-      retentionRate: membersAtMonth > 0 ? Math.round((activeThisMonth / membersAtMonth) * 100) : 0,
+      rate: membersAtMonth > 0 ? Math.round((activeThisMonth / membersAtMonth) * 100) : 0,
     })
   }
 
@@ -377,7 +387,7 @@ statsRoutes.get("/diet", async (c) => {
   const dateMap = new Map<string, DayAgg>()
 
   // 회원별 집계
-  type MemberAgg = { submittedDates: Set<string>; totalCalories: number; lastDate: string }
+  type MemberAgg = { submittedDates: Set<string>; totalCalories: number; lastRecordDate: string }
   const memberMap = new Map<string, MemberAgg>()
 
   for (const row of rows) {
@@ -390,11 +400,11 @@ statsRoutes.get("/diet", async (c) => {
     if (row.protein != null) agg.protein.push(Number(row.protein))
     if (row.fat != null) agg.fat.push(Number(row.fat))
 
-    if (!memberMap.has(row.user_id as string)) memberMap.set(row.user_id as string, { submittedDates: new Set(), totalCalories: 0, lastDate: "" })
+    if (!memberMap.has(row.user_id as string)) memberMap.set(row.user_id as string, { submittedDates: new Set(), totalCalories: 0, lastRecordDate: "" })
     const magg = memberMap.get(row.user_id as string)!
     magg.submittedDates.add(dateStr)
     if (row.calories != null) magg.totalCalories += Number(row.calories)
-    if (!magg.lastDate || dateStr > magg.lastDate) magg.lastDate = dateStr
+    if (!magg.lastRecordDate || dateStr > magg.lastRecordDate) magg.lastRecordDate = dateStr
   }
 
   const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0
@@ -414,12 +424,26 @@ statsRoutes.get("/diet", async (c) => {
     }
   })
 
+  // todaySubmitRate, yesterdaySubmitRate, avgSubmitRate 계산
+  const todayStr = toDateString(now)
+  const yesterdayDate = new Date(now)
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1)
+  const yesterdayStr = toDateString(yesterdayDate)
+
+  const todayEntry = dailyData.find((d) => d.date === todayStr)
+  const yesterdayEntry = dailyData.find((d) => d.date === yesterdayStr)
+  const todaySubmitRate = todayEntry?.submitRate ?? 0
+  const yesterdaySubmitRate = yesterdayEntry?.submitRate ?? 0
+  const avgSubmitRate = dailyData.length > 0
+    ? Math.round(dailyData.reduce((sum, d) => sum + d.submitRate, 0) / dailyData.length)
+    : 0
+
   // memberStats 상위 20명
   const memberStatsRaw = Array.from(memberMap.entries()).map(([userId, magg]) => ({
     userId,
     submitRate: Math.round((magg.submittedDates.size / days) * 100),
     avgCalories: magg.submittedDates.size > 0 ? Math.round(magg.totalCalories / magg.submittedDates.size) : 0,
-    lastDate: magg.lastDate,
+    lastRecordDate: magg.lastRecordDate || null,
   }))
   memberStatsRaw.sort((a, b) => b.submitRate - a.submitRate)
   const top20 = memberStatsRaw.slice(0, 20)
@@ -432,7 +456,7 @@ statsRoutes.get("/diet", async (c) => {
   const profileMap = new Map((profileData ?? []).map((p) => [p.id, p.name as string]))
   const memberStats = top20.map((r) => ({ ...r, name: profileMap.get(r.userId) ?? "" }))
 
-  return c.json({ totalMembers, dailyData, memberStats })
+  return c.json({ todaySubmitRate, yesterdaySubmitRate, avgSubmitRate, totalMembers, dailyData, memberStats })
 })
 
 /** 운동 통계 조회 (트레이너 전용) */
@@ -478,8 +502,8 @@ statsRoutes.get("/workout", async (c) => {
   const dateUserMap = new Map<string, Set<string>>()
   // 운동 종목별 빈도
   const exerciseCountMap = new Map<string, number>()
-  // 회원별 집계
-  type MemberWorkoutAgg = { recordedDates: Set<string>; exercises: Map<string, number>; lastDate: string }
+  // 회원별 집계 (성능 개선: totalWorkouts 카운터 직접 증분)
+  type MemberWorkoutAgg = { recordedDates: Set<string>; exercises: Map<string, number>; lastRecordDate: string; totalWorkouts: number }
   const memberMap = new Map<string, MemberWorkoutAgg>()
 
   for (const row of rows) {
@@ -492,34 +516,50 @@ statsRoutes.get("/workout", async (c) => {
 
     if (exerciseName) exerciseCountMap.set(exerciseName, (exerciseCountMap.get(exerciseName) ?? 0) + 1)
 
-    if (!memberMap.has(userId)) memberMap.set(userId, { recordedDates: new Set(), exercises: new Map(), lastDate: "" })
+    if (!memberMap.has(userId)) memberMap.set(userId, { recordedDates: new Set(), exercises: new Map(), lastRecordDate: "", totalWorkouts: 0 })
     const magg = memberMap.get(userId)!
     magg.recordedDates.add(dateStr)
+    magg.totalWorkouts += 1
     if (exerciseName) magg.exercises.set(exerciseName, (magg.exercises.get(exerciseName) ?? 0) + 1)
-    if (!magg.lastDate || dateStr > magg.lastDate) magg.lastDate = dateStr
+    if (!magg.lastRecordDate || dateStr > magg.lastRecordDate) magg.lastRecordDate = dateStr
   }
 
   const allDates = generateDateRange(startDate, now)
+  // dailyData: field renamed from count to recordCount
   const dailyData = allDates.map((date) => {
-    const count = dateUserMap.get(date)?.size ?? 0
-    return { date, count, recordRate: totalMembers > 0 ? Math.round((count / totalMembers) * 100) : 0 }
+    const recordCount = dateUserMap.get(date)?.size ?? 0
+    return { date, recordCount, recordRate: totalMembers > 0 ? Math.round((recordCount / totalMembers) * 100) : 0 }
   })
 
-  // exerciseDistribution 상위 10개
+  // todayRecordRate, yesterdayRecordRate, avgRecordRate 계산
+  const todayStr = toDateString(now)
+  const yesterdayDate = new Date(now)
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1)
+  const yesterdayStr = toDateString(yesterdayDate)
+
+  const todayEntry = dailyData.find((d) => d.date === todayStr)
+  const yesterdayEntry = dailyData.find((d) => d.date === yesterdayStr)
+  const todayRecordRate = todayEntry?.recordRate ?? 0
+  const yesterdayRecordRate = yesterdayEntry?.recordRate ?? 0
+  const avgRecordRate = dailyData.length > 0
+    ? Math.round(dailyData.reduce((sum, d) => sum + d.recordRate, 0) / dailyData.length)
+    : 0
+
+  // exerciseDistribution 상위 10개 - field renamed from name to exerciseName
   const exerciseDistribution = Array.from(exerciseCountMap.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
-    .map(([name, count]) => ({ name, count }))
+    .map(([exerciseName, count]) => ({ exerciseName, count }))
 
-  // memberStats 상위 20명
+  // memberStats 상위 20명 - fields renamed: favoriteExercise→topExercise, lastDate→lastRecordDate
   const memberStatsRaw = Array.from(memberMap.entries()).map(([userId, magg]) => {
-    const favoriteExercise = Array.from(magg.exercises.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ""
+    const topExercise = Array.from(magg.exercises.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
     return {
       userId,
       recordRate: Math.round((magg.recordedDates.size / days) * 100),
-      totalWorkouts: rows.filter((r) => r.user_id === userId).length,
-      favoriteExercise,
-      lastDate: magg.lastDate,
+      totalWorkouts: magg.totalWorkouts,
+      topExercise,
+      lastRecordDate: magg.lastRecordDate || null,
     }
   })
   memberStatsRaw.sort((a, b) => b.recordRate - a.recordRate)
@@ -533,7 +573,7 @@ statsRoutes.get("/workout", async (c) => {
   const profileMap = new Map((profileData ?? []).map((p) => [p.id, p.name as string]))
   const memberStats = top20.map((r) => ({ ...r, name: profileMap.get(r.userId) ?? "" }))
 
-  return c.json({ totalMembers, dailyData, exerciseDistribution, memberStats })
+  return c.json({ todayRecordRate, yesterdayRecordRate, avgRecordRate, totalMembers, dailyData, exerciseDistribution, memberStats })
 })
 
 /** 인바디 통계 조회 (트레이너 전용) */
@@ -559,6 +599,19 @@ statsRoutes.get("/inbody", async (c) => {
   const startMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1))
   const startMonthStr = toDateString(startMonthDate)
 
+  // 전체 회원 조회 (이름 포함)
+  const { data: memberData, error: memberError } = await adminSupabase
+    .from("profiles")
+    .select("id, name")
+    .eq("role", "member")
+    .is("deleted_at", null)
+
+  if (memberError) return c.json({ error: memberError.message }, 400)
+
+  const allMembers = memberData ?? []
+  const totalMembers = allMembers.length
+  const memberNameMap = new Map(allMembers.map((m) => [m.id as string, m.name as string]))
+
   // 기간 내 인바디 데이터 조회
   const { data: inbodyData, error: inbodyError } = await adminSupabase
     .from("inbody_records")
@@ -570,21 +623,24 @@ statsRoutes.get("/inbody", async (c) => {
 
   const rows = inbodyData ?? []
 
-  // 이번 달 측정 회원 수
-  const measuredThisMonth = new Set(
+  // 이번 달 측정 회원 Set
+  const measuredThisMonthSet = new Set(
     rows.filter((r) => (r.measured_date as string) >= thisMonthStartStr).map((r) => r.user_id as string)
-  ).size
+  )
+  const measuredThisMonth = measuredThisMonthSet.size
+  const unmeasuredThisMonth = totalMembers - measuredThisMonth
 
   // monthlyAvgTrend: measured_date의 YYYY-MM 그룹별 평균
-  type MonthAgg = { weight: number[]; skeletalMuscleMass: number[]; bodyFatPercentage: number[] }
+  // fields renamed: avgSkeletalMuscleMass→avgMuscleMass, avgBodyFatPercentage→avgBodyFatPct
+  type MonthAgg = { weight: number[]; muscleMass: number[]; bodyFatPct: number[] }
   const monthAggMap = new Map<string, MonthAgg>()
   for (const row of rows) {
     const month = (row.measured_date as string).substring(0, 7)
-    if (!monthAggMap.has(month)) monthAggMap.set(month, { weight: [], skeletalMuscleMass: [], bodyFatPercentage: [] })
+    if (!monthAggMap.has(month)) monthAggMap.set(month, { weight: [], muscleMass: [], bodyFatPct: [] })
     const agg = monthAggMap.get(month)!
     if (row.weight != null) agg.weight.push(Number(row.weight))
-    if (row.skeletal_muscle_mass != null) agg.skeletalMuscleMass.push(Number(row.skeletal_muscle_mass))
-    if (row.body_fat_percentage != null) agg.bodyFatPercentage.push(Number(row.body_fat_percentage))
+    if (row.skeletal_muscle_mass != null) agg.muscleMass.push(Number(row.skeletal_muscle_mass))
+    if (row.body_fat_percentage != null) agg.bodyFatPct.push(Number(row.body_fat_percentage))
   }
 
   const avg = (arr: number[]) => arr.length > 0 ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : null
@@ -594,11 +650,12 @@ statsRoutes.get("/inbody", async (c) => {
     .map(([month, agg]) => ({
       month,
       avgWeight: avg(agg.weight),
-      avgSkeletalMuscleMass: avg(agg.skeletalMuscleMass),
-      avgBodyFatPercentage: avg(agg.bodyFatPercentage),
+      avgMuscleMass: avg(agg.muscleMass),
+      avgBodyFatPct: avg(agg.bodyFatPct),
     }))
 
   // memberOverview: 회원별 최신 기록
+  // fields: lastMeasuredDate, latestWeight, latestMuscleMass, latestBodyFatPct, measuredThisMonth (boolean), name
   const memberLatestMap = new Map<string, typeof rows[0]>()
   for (const row of rows) {
     const userId = row.user_id as string
@@ -610,11 +667,13 @@ statsRoutes.get("/inbody", async (c) => {
 
   const memberOverview = Array.from(memberLatestMap.entries()).map(([userId, row]) => ({
     userId,
-    measuredDate: row.measured_date as string,
-    weight: row.weight != null ? Number(row.weight) : null,
-    skeletalMuscleMass: row.skeletal_muscle_mass != null ? Number(row.skeletal_muscle_mass) : null,
-    bodyFatPercentage: row.body_fat_percentage != null ? Number(row.body_fat_percentage) : null,
+    name: memberNameMap.get(userId) ?? "",
+    lastMeasuredDate: row.measured_date as string,
+    latestWeight: row.weight != null ? Number(row.weight) : null,
+    latestMuscleMass: row.skeletal_muscle_mass != null ? Number(row.skeletal_muscle_mass) : null,
+    latestBodyFatPct: row.body_fat_percentage != null ? Number(row.body_fat_percentage) : null,
+    measuredThisMonth: measuredThisMonthSet.has(userId),
   }))
 
-  return c.json({ measuredThisMonth, monthlyAvgTrend, memberOverview })
+  return c.json({ totalMembers, measuredThisMonth, unmeasuredThisMonth, monthlyAvgTrend, memberOverview })
 })
