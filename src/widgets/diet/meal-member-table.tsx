@@ -96,7 +96,7 @@ function MealImageGallery({ photoUrls, alt }: { photoUrls: string[]; alt: string
   if (photoUrls.length === 0) {
     return (
       <div className="overflow-hidden rounded-xl bg-muted">
-        <div className="flex aspect-[4/3] items-center justify-center bg-primary/5 text-muted-foreground">
+        <div className="flex aspect-square items-center justify-center bg-primary/5 text-muted-foreground">
           <div className="flex flex-col items-center gap-2">
             <Camera className="size-6 text-primary" />
             <p className="text-sm">등록된 식단 사진이 없습니다</p>
@@ -112,8 +112,8 @@ function MealImageGallery({ photoUrls, alt }: { photoUrls: string[]; alt: string
         src={photoUrls[index]}
         alt={alt}
         width={720}
-        height={540}
-        className="aspect-[4/3] w-full object-cover"
+        height={720}
+        className="aspect-square w-full object-contain"
         unoptimized
       />
       {photoUrls.length > 1 && (
