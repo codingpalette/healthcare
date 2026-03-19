@@ -107,13 +107,12 @@ function MealImageGallery({ photoUrls, alt }: { photoUrls: string[]; alt: string
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl bg-muted">
+    <div className="relative aspect-video overflow-hidden rounded-xl bg-muted">
       <Image
         src={photoUrls[index]}
         alt={alt}
-        width={720}
-        height={405}
-        className="aspect-video w-full object-contain"
+        fill
+        className="object-contain"
         unoptimized
       />
       {photoUrls.length > 1 && (
