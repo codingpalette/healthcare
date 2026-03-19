@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import Image from "next/image"
-import { Wrench, Search, Plus, Play, Trash2, Pencil } from "lucide-react"
+import { QRCodeCanvas } from "qrcode.react"
+import { Wrench, Search, Plus, Play, Trash2, Pencil, QrCode, Download } from "lucide-react"
 import { toast } from "sonner"
 import {
   Card,
@@ -25,6 +26,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
   Skeleton,
 } from "@/shared/ui"
 import { useEquipmentList, useDeleteEquipment } from "@/features/equipment"
@@ -153,6 +159,7 @@ function EquipmentCard({
   onEdit: () => void
   onDelete: () => void
 }) {
+  const [qrOpen, setQrOpen] = useState(false)
   const youtubeId = equipment.youtubeUrl ? extractYoutubeId(equipment.youtubeUrl) : null
   const thumbnailUrl = youtubeId
     ? getYoutubeThumbnailUrl(youtubeId)
@@ -203,6 +210,9 @@ function EquipmentCard({
               className="flex shrink-0 gap-1"
               onClick={(e) => e.stopPropagation()}
             >
+              <Button variant="ghost" size="icon-sm" onClick={() => setQrOpen(true)}>
+                <QrCode className="size-3.5" />
+              </Button>
               <Button variant="ghost" size="icon-sm" onClick={onEdit}>
                 <Pencil className="size-3.5" />
               </Button>
@@ -234,6 +244,68 @@ function EquipmentCard({
           </p>
         )}
       </div>
+
+      {isTrainer && (
+        <EquipmentQrDialog
+          equipment={equipment}
+          open={qrOpen}
+          onOpenChange={setQrOpen}
+        />
+      )}
     </Card>
+  )
+}
+
+function EquipmentQrDialog({
+  equipment,
+  open,
+  onOpenChange,
+}: {
+  equipment: Equipment
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const qrUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/equipment?id=${equipment.id}`
+    : ""
+
+  const handleDownload = useCallback(() => {
+    const canvas = canvasRef.current?.querySelector("canvas")
+    if (!canvas) return
+    const link = document.createElement("a")
+    link.download = `qr-${equipment.name}.png`
+    link.href = canvas.toDataURL("image/png")
+    link.click()
+  }, [equipment.name])
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm" showCloseButton>
+        <DialogHeader>
+          <DialogTitle>QR 코드</DialogTitle>
+          <DialogDescription>
+            {equipment.name}의 QR 코드를 기구에 부착하세요.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4">
+          <div ref={canvasRef} className="rounded-xl bg-white p-4">
+            <QRCodeCanvas
+              value={qrUrl}
+              size={200}
+              level="H"
+              marginSize={1}
+            />
+          </div>
+          <p className="text-center text-xs text-muted-foreground break-all">
+            {qrUrl}
+          </p>
+          <Button onClick={handleDownload} className="w-full">
+            <Download className="size-4" />
+            QR 코드 다운로드
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
