@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
 
@@ -75,14 +76,15 @@ export function ImageGallery({
         )}
       </div>
 
-      {lightboxOpen && (
+      {lightboxOpen && createPortal(
         <ImageLightbox
           urls={urls}
           alt={alt}
           initialIndex={index}
           onClose={() => setLightboxOpen(false)}
           onIndexChange={setIndex}
-        />
+        />,
+        document.body
       )}
     </>
   )
