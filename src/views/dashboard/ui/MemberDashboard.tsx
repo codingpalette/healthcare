@@ -2,7 +2,7 @@
 
 import type { Profile } from "@/entities/user"
 import {
-  EquipmentShortcutCard,
+  ExerciseShortcutCard,
   RecentQnaCard,
   TodayDietCard,
   TodayWorkoutCard,
@@ -37,7 +37,7 @@ export function MemberDashboard({ profile }: MemberDashboardProps) {
         <MembershipStatusCard />
         <RecentNoticesCard />
         {/* <RecentQnaCard /> */}
-        <EquipmentShortcutCard />
+        <ExerciseShortcutCard />
       </div>
     </div>
   )

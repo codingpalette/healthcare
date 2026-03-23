@@ -21,7 +21,7 @@ const pageTitles: Record<string, string> = {
   "/notifications": "알림",
   "/settings": "설정",
   "/qna": "Q&A",
-  "/equipment": "기구 가이드",
+  "/guide": "운동 DB",
   "/food-items": "음식 DB 관리",
 }
 

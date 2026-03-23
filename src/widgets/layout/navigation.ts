@@ -28,7 +28,7 @@ const commonNav: NavigationItem[] = [
   { title: "기록", href: "/records", icon: ClipboardList },
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
   // { title: "Q&A", href: "/qna", icon: MessageCircle },
-  { title: "가이드", href: "/guide", icon: BookOpen },
+  { title: "운동 DB", href: "/guide", icon: BookOpen },
   { title: "커뮤니티", href: "/community", icon: MessageCircleHeart },
   { title: "공지사항", href: "/notices", icon: Megaphone },
 ]

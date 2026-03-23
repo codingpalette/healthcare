@@ -267,7 +267,7 @@ function ExerciseItemQrDialog({
 }) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const qrUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/guide?tab=exercise&id=${exerciseItem.id}`
+    ? `${window.location.origin}/guide?id=${exerciseItem.id}`
     : ""
 
   const handleDownload = useCallback(() => {
@@ -285,7 +285,7 @@ function ExerciseItemQrDialog({
         <DialogHeader>
           <DialogTitle>QR 코드</DialogTitle>
           <DialogDescription>
-            {exerciseItem.name}의 QR 코드를 운동 기구에 부착하세요.
+            {exerciseItem.name}의 QR 코드를 스캔하면 운동 가이드를 확인할 수 있습니다.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4">
