@@ -1,6 +1,6 @@
 {
-  "name": "헬스케어",
-  "short_name": "헬스케어",
+  "name": "웨스트짐",
+  "short_name": "웨스트짐",
   "description": "헬스장 맞춤형 헬스케어 플랫폼",
   "start_url": "/",
   "display": "standalone",
