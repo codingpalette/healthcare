@@ -121,18 +121,23 @@ function ImageLightbox({
     goTo((currentIndex + 1) % urls.length)
   }, [currentIndex, urls.length, goTo])
 
-  // 키보드 네비게이션
+  // 키보드 네비게이션 — ESC 이벤트 전파를 막아 부모 Dialog가 닫히지 않도록 함
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
+      if (e.key === "Escape") {
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        e.preventDefault()
+        onClose()
+      }
       if (e.key === "ArrowLeft") goPrev()
       if (e.key === "ArrowRight") goNext()
     }
-    document.addEventListener("keydown", handleKeyDown)
+    document.addEventListener("keydown", handleKeyDown, true)
     // 스크롤 방지
     document.body.style.overflow = "hidden"
     return () => {
-      document.removeEventListener("keydown", handleKeyDown)
+      document.removeEventListener("keydown", handleKeyDown, true)
       document.body.style.overflow = ""
     }
   }, [onClose, goPrev, goNext])
