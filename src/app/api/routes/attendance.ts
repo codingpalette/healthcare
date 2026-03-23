@@ -102,7 +102,7 @@ attendanceRoutes.get("/me", async (c) => {
 
 attendanceRoutes.get("/today", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -133,7 +133,7 @@ attendanceRoutes.get("/today", async (c) => {
 
 attendanceRoutes.get("/members/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 

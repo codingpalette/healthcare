@@ -44,7 +44,7 @@ noticesRoutes.get("/", async (c) => {
 // 이미지 업로드 (트레이너 전용) — /:id 라우트보다 먼저 정의해야 함
 noticesRoutes.post("/images", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 이미지를 업로드할 수 있습니다" }, 403)
   }
 
@@ -88,7 +88,7 @@ noticesRoutes.get("/:id", async (c) => {
 // 공지사항 생성 (트레이너 전용)
 noticesRoutes.post("/", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 공지사항을 작성할 수 있습니다" }, 403)
   }
 
@@ -136,7 +136,7 @@ noticesRoutes.post("/", async (c) => {
 // 공지사항 수정 (트레이너 전용)
 noticesRoutes.patch("/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 공지사항을 수정할 수 있습니다" }, 403)
   }
 
@@ -178,7 +178,7 @@ noticesRoutes.patch("/:id", async (c) => {
 // 공지사항 삭제 (트레이너 전용)
 noticesRoutes.delete("/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 공지사항을 삭제할 수 있습니다" }, 403)
   }
 

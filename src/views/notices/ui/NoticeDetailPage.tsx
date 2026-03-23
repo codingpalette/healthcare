@@ -12,7 +12,7 @@ interface NoticeDetailPageProps {
 }
 
 export function NoticeDetailPage({ profile, noticeId }: NoticeDetailPageProps) {
-  const isTrainer = profile.role === "trainer"
+  const isTrainer = profile.role !== "member"
   const { data: notice, isLoading } = useNotice(noticeId)
   const [formOpen, setFormOpen] = useState(false)
 

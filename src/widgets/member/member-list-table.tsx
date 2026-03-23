@@ -138,8 +138,8 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{member.name}</span>
-                  <Badge variant={member.role === "trainer" ? "default" : "secondary"}>
-                    {member.role === "trainer" ? "트레이너" : "회원"}
+                  <Badge variant={member.role !== "member" ? "default" : "secondary"}>
+                    {member.role === "admin" ? "관리자" : member.role === "trainer" ? "트레이너" : "회원"}
                   </Badge>
                   {member.role === "member" && getMembershipBadge(member.id)}
                 </div>
@@ -185,7 +185,7 @@ export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTabl
                 >
                   <TableCell className="font-medium">{member.name}</TableCell>
                   <TableCell>{formatEmail(member.email)}</TableCell>
-                  <TableCell>{member.role === "trainer" ? "트레이너" : "회원"}</TableCell>
+                  <TableCell>{member.role === "admin" ? "관리자" : member.role === "trainer" ? "트레이너" : "회원"}</TableCell>
                   <TableCell>{getMembershipBadge(member.id)}</TableCell>
                   <TableCell>{member.phone ?? "-"}</TableCell>
                   <TableCell>{formatDate(member.createdAt)}</TableCell>

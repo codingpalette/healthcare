@@ -5,7 +5,7 @@ import type { AuthEnv } from "@/shared/api/hono-auth-middleware"
 export const membershipGuardMiddleware = createMiddleware<AuthEnv>(async (c, next) => {
   const userRole = c.get("userRole")
 
-  // 트레이너는 체크 없이 통과
+  // 트레이너/관리자는 체크 없이 통과
   if (userRole !== "member") {
     return next()
   }

@@ -9,7 +9,7 @@ import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
 type ProfileRow = {
   id: string
-  role: "member" | "trainer"
+  role: string
   name: string
   avatar_url: string | null
   trainer_id?: string | null
@@ -42,8 +42,9 @@ type ChatMessageRow = {
 
 export const chatRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 
-function getRoomReadField(userRole: "member" | "trainer") {
-  return userRole === "trainer" ? "trainer_last_read_at" : "member_last_read_at"
+function getRoomReadField(userRole: string) {
+  // admin과 trainer는 동일하게 처리
+  return userRole !== "member" ? "trainer_last_read_at" : "member_last_read_at"
 }
 
 function buildMessagePreview(
@@ -70,11 +71,12 @@ function buildMessagePreview(
 async function buildRoomSummary(
   room: ChatRoomRow,
   userId: string,
-  userRole: "member" | "trainer",
+  userRole: string,
   adminSupabase: ReturnType<typeof createAdminSupabase>,
   counterpart?: ProfileRow | null
 ) {
-  const counterpartId = userRole === "trainer" ? room.member_id : room.trainer_id
+  const isTrainerSide = userRole !== "member"
+  const counterpartId = isTrainerSide ? room.member_id : room.trainer_id
   let resolvedCounterpart = counterpart ?? null
 
   if (!resolvedCounterpart) {
@@ -87,9 +89,9 @@ async function buildRoomSummary(
     resolvedCounterpart = data ?? null
   }
 
-  const myLastReadAt = userRole === "trainer" ? room.trainer_last_read_at : room.member_last_read_at
+  const myLastReadAt = isTrainerSide ? room.trainer_last_read_at : room.member_last_read_at
   const counterpartLastReadAt =
-    userRole === "trainer" ? room.member_last_read_at : room.trainer_last_read_at
+    isTrainerSide ? room.member_last_read_at : room.trainer_last_read_at
 
   let unreadQuery = adminSupabase
     .from("chat_messages")
@@ -154,17 +156,23 @@ async function refreshRoomMetadata(roomId: string, adminSupabase: ReturnType<typ
 
 async function loadChatRelationships(
   userId: string,
-  userRole: "member" | "trainer",
+  userRole: string,
   adminSupabase: ReturnType<typeof createAdminSupabase>
 ) {
-  if (userRole === "trainer") {
-    const { data, error } = await adminSupabase
+  // admin/trainer는 담당 회원 목록 로드 (admin은 모든 회원)
+  if (userRole === "trainer" || userRole === "admin") {
+    let query = adminSupabase
       .from("profiles")
       .select("id, role, name, avatar_url")
-      .eq("trainer_id", userId)
       .eq("role", "member")
       .is("deleted_at", null)
       .order("name", { ascending: true })
+
+    if (userRole !== "admin") {
+      query = query.eq("trainer_id", userId)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return (data ?? []) as ProfileRow[]
@@ -208,7 +216,7 @@ async function getAuthorizedRoom(
 
 chatRoutes.get("/rooms", async (c) => {
   const userId = c.get("userId")
-  const userRole = c.get("userRole") as "member" | "trainer"
+  const userRole = c.get("userRole")
   const adminSupabase = createAdminSupabase()
 
   const relationships = await loadChatRelationships(userId, userRole, adminSupabase)
@@ -216,38 +224,48 @@ chatRoutes.get("/rooms", async (c) => {
     return c.json([])
   }
 
+  const isTrainerSide = userRole !== "member"
   const counterpartIds = relationships.map((profile) => profile.id)
-  const roomQuery =
-    userRole === "trainer"
-      ? adminSupabase
-          .from("chat_rooms")
-          .select("*")
-          .eq("trainer_id", userId)
-          .in("member_id", counterpartIds)
-      : adminSupabase
-          .from("chat_rooms")
-          .select("*")
-          .eq("member_id", userId)
-          .in("trainer_id", counterpartIds)
+
+  // admin은 모든 채팅방 조회 (member_id 기준), trainer는 자기 trainer_id 기준
+  let roomQuery
+  if (userRole === "admin") {
+    roomQuery = adminSupabase
+      .from("chat_rooms")
+      .select("*")
+      .in("member_id", counterpartIds)
+  } else if (userRole === "trainer") {
+    roomQuery = adminSupabase
+      .from("chat_rooms")
+      .select("*")
+      .eq("trainer_id", userId)
+      .in("member_id", counterpartIds)
+  } else {
+    roomQuery = adminSupabase
+      .from("chat_rooms")
+      .select("*")
+      .eq("member_id", userId)
+      .in("trainer_id", counterpartIds)
+  }
 
   const { data: existingRooms, error: roomError } = await roomQuery
   if (roomError) return c.json({ error: roomError.message }, 400)
 
   const existingByCounterpart = new Map<string, ChatRoomRow>()
   for (const room of (existingRooms ?? []) as ChatRoomRow[]) {
-    existingByCounterpart.set(userRole === "trainer" ? room.member_id : room.trainer_id, room)
+    existingByCounterpart.set(isTrainerSide ? room.member_id : room.trainer_id, room)
   }
 
   const missingProfiles = relationships.filter((profile) => !existingByCounterpart.has(profile.id))
   let insertedRooms: ChatRoomRow[] = []
 
-  if (missingProfiles.length > 0) {
+  if (missingProfiles.length > 0 && userRole !== "admin") {
     const { data: createdRooms, error: createError } = await adminSupabase
       .from("chat_rooms")
       .upsert(
         missingProfiles.map((profile) => ({
-          member_id: userRole === "trainer" ? profile.id : userId,
-          trainer_id: userRole === "trainer" ? userId : profile.id,
+          member_id: isTrainerSide ? profile.id : userId,
+          trainer_id: isTrainerSide ? userId : profile.id,
         })),
         { onConflict: "member_id,trainer_id" }
       )
@@ -267,7 +285,7 @@ chatRoutes.get("/rooms", async (c) => {
         userRole,
         adminSupabase,
         relationships.find((profile) =>
-          userRole === "trainer" ? profile.id === room.member_id : profile.id === room.trainer_id
+          isTrainerSide ? profile.id === room.member_id : profile.id === room.trainer_id
         ) ?? null
       )
     )
@@ -285,7 +303,7 @@ chatRoutes.get("/rooms", async (c) => {
 
 chatRoutes.post("/rooms/ensure", async (c) => {
   const userId = c.get("userId")
-  const userRole = c.get("userRole") as "member" | "trainer"
+  const userRole = c.get("userRole")
   const adminSupabase = createAdminSupabase()
   const body = await c.req.json<{ counterpartId?: string }>()
 
@@ -293,7 +311,7 @@ chatRoutes.post("/rooms/ensure", async (c) => {
     return c.json({ error: "상대방 정보가 필요합니다" }, 400)
   }
 
-  if (userRole === "trainer") {
+  if (userRole === "trainer" || userRole === "admin") {
     const { data: member, error: memberError } = await adminSupabase
       .from("profiles")
       .select("id, role, name, avatar_url, trainer_id")
@@ -303,16 +321,20 @@ chatRoutes.post("/rooms/ensure", async (c) => {
     if (memberError || !member) {
       return c.json({ error: "회원을 찾을 수 없습니다" }, 404)
     }
-    if (member.role !== "member" || member.trainer_id !== userId) {
+    // admin은 모든 회원과 채팅 가능, trainer는 담당 회원만
+    if (member.role !== "member" || (userRole !== "admin" && member.trainer_id !== userId)) {
       return c.json({ error: "담당 회원과만 관리톡을 열 수 있습니다" }, 403)
     }
+
+    // admin이 채팅방을 열 때 trainer_id는 회원의 실제 트레이너 사용
+    const roomTrainerId = userRole === "admin" ? (member.trainer_id ?? userId) : userId
 
     const { data: room, error } = await adminSupabase
       .from("chat_rooms")
       .upsert(
         {
           member_id: member.id,
-          trainer_id: userId,
+          trainer_id: roomTrainerId,
         },
         { onConflict: "member_id,trainer_id" }
       )
@@ -422,7 +444,7 @@ chatRoutes.get("/rooms/:id/messages", async (c) => {
 
 chatRoutes.post("/rooms/:id/messages", async (c) => {
   const userId = c.get("userId")
-  const userRole = c.get("userRole") as "member" | "trainer"
+  const userRole = c.get("userRole")
   const roomId = c.req.param("id")
   const adminSupabase = createAdminSupabase()
 
@@ -453,7 +475,7 @@ chatRoutes.post("/rooms/:id/messages", async (c) => {
     if (!content) {
       return c.json({ error: "메시지 내용을 입력해주세요" }, 400)
     }
-    if (body.type === "feedback" && userRole !== "trainer") {
+    if (body.type === "feedback" && userRole !== "trainer" && userRole !== "admin") {
       return c.json({ error: "트레이너만 피드백 메시지를 보낼 수 있습니다" }, 403)
     }
     insertData.content = content
@@ -657,7 +679,7 @@ chatRoutes.post("/rooms/:id/messages", async (c) => {
 
 chatRoutes.patch("/rooms/:id/read", async (c) => {
   const userId = c.get("userId")
-  const userRole = c.get("userRole") as "member" | "trainer"
+  const userRole = c.get("userRole")
   const roomId = c.req.param("id")
   const adminSupabase = createAdminSupabase()
 

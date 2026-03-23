@@ -30,8 +30,8 @@ export default async function Page() {
 
   const role = dbProfile?.role ?? (user.user_metadata?.role as Profile["role"]) ?? "member"
 
-  // 트레이너만 접근 가능
-  if (role !== "trainer") {
+  // 트레이너/관리자만 접근 가능
+  if (role !== "trainer" && role !== "admin") {
     redirect("/")
   }
 

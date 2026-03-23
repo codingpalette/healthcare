@@ -121,7 +121,7 @@ inbodyRoutes.get("/me", async (c) => {
 
 inbodyRoutes.get("/members/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -137,7 +137,7 @@ inbodyRoutes.get("/members/:id", async (c) => {
     .eq("id", memberId)
     .single()
 
-  if (!member || member.role !== "member" || member.trainer_id !== userId) {
+  if (!member || member.role !== "member" || (userRole !== "admin" && member.trainer_id !== userId)) {
     return c.json({ error: "담당 회원만 조회할 수 있습니다" }, 403)
   }
 
@@ -158,19 +158,26 @@ inbodyRoutes.get("/members/:id", async (c) => {
 
 inbodyRoutes.get("/latest", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
   const userId = c.get("userId")
   const adminSupabase = createAdminSupabase()
-  const { data: members, error: membersError } = await adminSupabase
+
+  // admin은 모든 회원, trainer는 담당 회원만
+  let memberQuery = adminSupabase
     .from("profiles")
     .select("id, name, avatar_url")
-    .eq("trainer_id", userId)
     .eq("role", "member")
     .is("deleted_at", null)
     .order("name", { ascending: true })
+
+  if (userRole !== "admin") {
+    memberQuery = memberQuery.eq("trainer_id", userId)
+  }
+
+  const { data: members, error: membersError } = await memberQuery
 
   if (membersError) return c.json({ error: membersError.message }, 400)
   if (!members?.length) return c.json([])
@@ -185,11 +192,17 @@ inbodyRoutes.get("/latest", async (c) => {
 
   if (recordsError) return c.json({ error: recordsError.message }, 400)
 
-  const { data: reminders, error: remindersError } = await adminSupabase
+  // admin은 모든 리마인더, trainer는 자기 것만
+  let reminderQuery = adminSupabase
     .from("inbody_reminder_settings")
     .select("*")
-    .eq("trainer_id", userId)
     .in("user_id", memberIds)
+
+  if (userRole !== "admin") {
+    reminderQuery = reminderQuery.eq("trainer_id", userId)
+  }
+
+  const { data: reminders, error: remindersError } = await reminderQuery
 
   if (remindersError) return c.json({ error: remindersError.message }, 400)
 
@@ -353,19 +366,24 @@ inbodyRoutes.get("/reminders/me", async (c) => {
 
 inbodyRoutes.get("/reminders/members/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
   const userId = c.get("userId")
   const memberId = c.req.param("id")
   const adminSupabase = createAdminSupabase()
-  const { data, error } = await adminSupabase
+  // admin은 모든 리마인더 조회 가능
+  let reminderQuery = adminSupabase
     .from("inbody_reminder_settings")
     .select("*")
     .eq("user_id", memberId)
-    .eq("trainer_id", userId)
-    .single()
+
+  if (userRole !== "admin") {
+    reminderQuery = reminderQuery.eq("trainer_id", userId)
+  }
+
+  const { data, error } = await reminderQuery.single()
 
   if (error) {
     if (error.code === "PGRST116") return c.json({ error: "설정이 없습니다" }, 404)
@@ -377,7 +395,7 @@ inbodyRoutes.get("/reminders/members/:id", async (c) => {
 
 inbodyRoutes.put("/reminders/members/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 설정할 수 있습니다" }, 403)
   }
 
@@ -396,16 +414,19 @@ inbodyRoutes.put("/reminders/members/:id", async (c) => {
     .eq("id", memberId)
     .single()
 
-  if (!member || member.role !== "member" || member.trainer_id !== userId) {
+  if (!member || member.role !== "member" || (userRole !== "admin" && member.trainer_id !== userId)) {
     return c.json({ error: "담당 회원만 설정할 수 있습니다" }, 403)
   }
+
+  // admin은 회원의 기존 trainer_id 유지, trainer는 자기 ID 사용
+  const trainerId = userRole === "admin" ? (member.trainer_id ?? userId) : userId
 
   const { data, error } = await adminSupabase
     .from("inbody_reminder_settings")
     .upsert(
       {
         user_id: memberId,
-        trainer_id: userId,
+        trainer_id: trainerId,
         measurement_day: normalizeReminderDay(body.measurementDay),
         enabled: body.enabled ?? true,
         updated_at: new Date().toISOString(),

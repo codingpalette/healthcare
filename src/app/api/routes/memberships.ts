@@ -4,12 +4,24 @@ import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 
 export const membershipsRoutes = new Hono<AuthEnv>().use(authMiddleware)
 
-// 헬퍼: 트레이너가 해당 회원을 소유하는지 확인
+// 헬퍼: 트레이너/관리자가 해당 회원에 접근 가능한지 확인
 async function verifyTrainerOwnership(
   adminSupabase: ReturnType<typeof createAdminSupabase>,
   trainerId: string,
-  memberId: string
+  memberId: string,
+  userRole?: string
 ) {
+  // admin은 모든 회원에 접근 가능
+  if (userRole === "admin") {
+    const { data } = await adminSupabase
+      .from("profiles")
+      .select("id")
+      .eq("id", memberId)
+      .eq("role", "member")
+      .is("deleted_at", null)
+      .maybeSingle()
+    return !!data
+  }
   const { data } = await adminSupabase
     .from("profiles")
     .select("id")
@@ -42,16 +54,22 @@ membershipsRoutes.get("/", async (c) => {
   const userRole = c.get("userRole")
   const adminSupabase = createAdminSupabase()
 
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
-  const { data: members } = await adminSupabase
+  // admin은 모든 회원, trainer는 담당 회원만
+  let memberQuery = adminSupabase
     .from("profiles")
     .select("id")
-    .eq("trainer_id", userId)
     .eq("role", "member")
     .is("deleted_at", null)
+
+  if (userRole !== "admin") {
+    memberQuery = memberQuery.eq("trainer_id", userId)
+  }
+
+  const { data: members } = await memberQuery
 
   if (!members?.length) return c.json([])
 
@@ -73,11 +91,11 @@ membershipsRoutes.get("/members/:id", async (c) => {
   const memberId = c.req.param("id")
   const adminSupabase = createAdminSupabase()
 
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
-  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, memberId)
+  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, memberId, userRole)
   if (!isOwner) {
     return c.json({ error: "해당 회원에 대한 권한이 없습니다" }, 403)
   }
@@ -98,7 +116,7 @@ membershipsRoutes.post("/", async (c) => {
   const userRole = c.get("userRole")
   const adminSupabase = createAdminSupabase()
 
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 회원권을 생성할 수 있습니다" }, 403)
   }
 
@@ -113,7 +131,7 @@ membershipsRoutes.post("/", async (c) => {
     return c.json({ error: "memberId, startDate, endDate는 필수입니다" }, 400)
   }
 
-  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, body.memberId)
+  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, body.memberId, userRole)
   if (!isOwner) {
     return c.json({ error: "해당 회원에 대한 권한이 없습니다" }, 403)
   }
@@ -145,7 +163,7 @@ membershipsRoutes.patch("/:id", async (c) => {
   const membershipId = c.req.param("id")
   const adminSupabase = createAdminSupabase()
 
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 회원권을 수정할 수 있습니다" }, 403)
   }
 
@@ -159,7 +177,7 @@ membershipsRoutes.patch("/:id", async (c) => {
     return c.json({ error: "회원권을 찾을 수 없습니다" }, 404)
   }
 
-  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, existing.member_id as string)
+  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, existing.member_id as string, userRole)
   if (!isOwner) {
     return c.json({ error: "해당 회원에 대한 권한이 없습니다" }, 403)
   }
@@ -197,7 +215,7 @@ membershipsRoutes.delete("/:id", async (c) => {
   const membershipId = c.req.param("id")
   const adminSupabase = createAdminSupabase()
 
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 회원권을 삭제할 수 있습니다" }, 403)
   }
 
@@ -211,7 +229,7 @@ membershipsRoutes.delete("/:id", async (c) => {
     return c.json({ error: "회원권을 찾을 수 없습니다" }, 404)
   }
 
-  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, existing.member_id as string)
+  const isOwner = await verifyTrainerOwnership(adminSupabase, userId, existing.member_id as string, userRole)
   if (!isOwner) {
     return c.json({ error: "해당 회원에 대한 권한이 없습니다" }, 403)
   }

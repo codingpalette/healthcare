@@ -65,14 +65,20 @@ async function syncMemberInbodyNotifications(
 async function syncTrainerNotifications(
   adminSupabase: ReturnType<typeof createAdminSupabase>,
   trainerId: string,
-  options: { inbodyEnabled: boolean; attendanceEnabled: boolean; pushEnabled: boolean }
+  options: { inbodyEnabled: boolean; attendanceEnabled: boolean; pushEnabled: boolean; isAdmin?: boolean }
 ) {
-  const { data: members } = await adminSupabase
+  // admin은 모든 회원, trainer는 배정된 회원만
+  let query = adminSupabase
     .from("profiles")
     .select("id, name")
-    .eq("trainer_id", trainerId)
     .eq("role", "member")
     .is("deleted_at", null)
+
+  if (!options.isAdmin) {
+    query = query.eq("trainer_id", trainerId)
+  }
+
+  const { data: members } = await query
 
   if (!members?.length) return
 
@@ -224,14 +230,19 @@ async function syncMembershipExpiryNotifications(
     }
   }
 
-  if (userRole === "trainer") {
-    // 트레이너에게 회원 만료 알림
-    const { data: members } = await adminSupabase
+  if (userRole === "trainer" || userRole === "admin") {
+    // 트레이너/관리자에게 회원 만료 알림
+    let memberQuery = adminSupabase
       .from("profiles")
       .select("id, name")
-      .eq("trainer_id", userId)
       .eq("role", "member")
       .is("deleted_at", null)
+
+    if (userRole !== "admin") {
+      memberQuery = memberQuery.eq("trainer_id", userId)
+    }
+
+    const { data: members } = await memberQuery
 
     if (!members?.length) return
 
@@ -285,11 +296,12 @@ notificationsRoutes.post("/sync", async (c) => {
       await syncMemberInbodyNotifications(adminSupabase, userId, Boolean(preferences.push_enabled))
     }
 
-    if (userRole === "trainer") {
+    if (userRole === "trainer" || userRole === "admin") {
       await syncTrainerNotifications(adminSupabase, userId, {
         inbodyEnabled: Boolean(preferences.inbody_enabled),
         attendanceEnabled: Boolean(preferences.attendance_enabled),
         pushEnabled: Boolean(preferences.push_enabled),
+        isAdmin: userRole === "admin",
       })
     }
 

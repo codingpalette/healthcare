@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { createSupabaseServerClient } from "@/shared/api/supabase-server"
+import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import type { Profile } from "@/entities/user"
 import { SidebarInset, SidebarProvider } from "@/shared/ui/sidebar"
 import { AppSidebar, AppHeader, MobileBottomNav } from "@/widgets/layout"
@@ -10,6 +11,19 @@ export default async function AuthenticatedLayout({
 }: {
   children: React.ReactNode
 }) {
+  // 관리자 계정이 없으면 초기 설정 페이지로 이동
+  const admin = createAdminSupabase()
+  const { data: adminProfiles } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin")
+    .is("deleted_at", null)
+    .limit(1)
+
+  if (!adminProfiles?.length) {
+    redirect("/setup-admin")
+  }
+
   const supabase = await createSupabaseServerClient()
 
   const {
@@ -64,7 +78,7 @@ export default async function AuthenticatedLayout({
         deletedAt: null,
       }
 
-  // 회원권 만료 체크 (회원만)
+  // 회원권 만료 체크 (회원만 — admin/trainer는 체크 스킵)
   if (profile.role === "member") {
     const { data: membership } = await supabase
       .from("memberships")

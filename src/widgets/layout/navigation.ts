@@ -11,6 +11,7 @@ import {
   Megaphone,
   MessageCircleHeart,
   MessagesSquare,
+  Shield,
   Utensils,
   Users,
 } from "lucide-react"
@@ -39,6 +40,13 @@ const trainerNav: NavigationItem[] = [
   { title: "통계", href: "/stats", icon: BarChart3 },
 ]
 
+// admin은 트레이너 메뉴 + 관리자 전용 메뉴 모두 포함
+const adminNav: NavigationItem[] = [
+  { title: "회원 관리", href: "/members", icon: Users },
+  { title: "음식 DB 관리", href: "/food-items", icon: Utensils },
+  { title: "통계", href: "/stats", icon: BarChart3 },
+]
+
 const memberNav: NavigationItem[] = []
 
 const memberPrimaryNav: NavigationItem[] = [
@@ -55,12 +63,23 @@ const trainerPrimaryNav: NavigationItem[] = [
   { title: "관리톡", href: "/chat", icon: MessagesSquare },
 ]
 
+const adminPrimaryNav: NavigationItem[] = [
+  { title: "홈", href: "/", icon: LayoutDashboard },
+  { title: "회원", href: "/members", icon: Users },
+  { title: "기록", href: "/records", icon: ClipboardList },
+  { title: "관리톡", href: "/chat", icon: MessagesSquare },
+]
+
 export function getSidebarNavItems(role: Profile["role"]) {
-  return role === "member" ? [...commonNav, ...memberNav] : [...commonNav, ...trainerNav]
+  if (role === "admin") return [...commonNav, ...adminNav]
+  if (role === "trainer") return [...commonNav, ...trainerNav]
+  return [...commonNav, ...memberNav]
 }
 
 export function getMobilePrimaryNavItems(role: Profile["role"]) {
-  return role === "member" ? memberPrimaryNav : trainerPrimaryNav
+  if (role === "admin") return adminPrimaryNav
+  if (role === "trainer") return trainerPrimaryNav
+  return memberPrimaryNav
 }
 
 export function isNavItemActive(pathname: string, href: string) {

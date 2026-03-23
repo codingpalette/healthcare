@@ -52,7 +52,7 @@ exerciseRoutes.get("/:id", async (c) => {
 // 운동 항목 등록 (트레이너 전용)
 exerciseRoutes.post("/", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 운동 항목을 등록할 수 있습니다" }, 403)
   }
 
@@ -140,7 +140,7 @@ exerciseRoutes.post("/", async (c) => {
 // 운동 항목 수정 (트레이너 전용)
 exerciseRoutes.patch("/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 운동 항목을 수정할 수 있습니다" }, 403)
   }
 
@@ -241,7 +241,7 @@ exerciseRoutes.patch("/:id", async (c) => {
 // 운동 항목 삭제 (트레이너 전용)
 exerciseRoutes.delete("/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 운동 항목을 삭제할 수 있습니다" }, 403)
   }
 

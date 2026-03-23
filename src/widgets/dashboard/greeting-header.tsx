@@ -32,7 +32,7 @@ export function GreetingHeader({ profile }: GreetingHeaderProps) {
   // 이름의 첫 글자를 아바타 이니셜로 사용
   const initials = profile.name.slice(0, 1)
 
-  const roleLabel = profile.role === "trainer" ? "트레이너" : "회원"
+  const roleLabel = profile.role === "admin" ? "관리자" : profile.role === "trainer" ? "트레이너" : "회원"
 
   const handleLogout = async () => {
     await signOut()

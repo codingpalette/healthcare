@@ -14,7 +14,7 @@ interface ExerciseGuidePageProps {
 }
 
 export function ExerciseGuidePage({ profile }: ExerciseGuidePageProps) {
-  const isTrainer = profile.role === "trainer"
+  const isTrainer = profile.role !== "member"
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<ExerciseItem | null>(null)
   const [selectedExerciseItem, setSelectedExerciseItem] = useState<ExerciseItem | null>(null)

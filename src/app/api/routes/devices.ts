@@ -148,7 +148,7 @@ devicesRoutes.delete("/:id", async (c) => {
 /** 회원 기기 목록 조회 (트레이너) */
 devicesRoutes.get("/members/:userId", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 접근 가능합니다" }, 403)
   }
 
@@ -168,7 +168,7 @@ devicesRoutes.get("/members/:userId", async (c) => {
 /** 회원 기기 강제 로그아웃 (트레이너) */
 devicesRoutes.delete("/members/:userId/:deviceId", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 접근 가능합니다" }, 403)
   }
 

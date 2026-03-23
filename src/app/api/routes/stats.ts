@@ -29,7 +29,7 @@ function generateDateRange(startDate: Date, endDate: Date): string[] {
 statsRoutes.get("/daily-access", async (c) => {
   // 트레이너 권한 확인
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -90,7 +90,7 @@ statsRoutes.get("/daily-access", async (c) => {
 /** 출석 통계 조회 (트레이너 전용) */
 statsRoutes.get("/attendance", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -204,7 +204,7 @@ statsRoutes.get("/attendance", async (c) => {
 /** 회원 통계 조회 (트레이너 전용) */
 statsRoutes.get("/members", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -346,7 +346,7 @@ statsRoutes.get("/members", async (c) => {
 /** 식단 통계 조회 (트레이너 전용) */
 statsRoutes.get("/diet", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -464,7 +464,7 @@ statsRoutes.get("/diet", async (c) => {
 /** 운동 통계 조회 (트레이너 전용) */
 statsRoutes.get("/workout", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -581,7 +581,7 @@ statsRoutes.get("/workout", async (c) => {
 /** 인바디 통계 조회 (트레이너 전용) */
 statsRoutes.get("/inbody", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 

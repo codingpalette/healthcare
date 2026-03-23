@@ -11,7 +11,7 @@ interface NoticesPageProps {
 }
 
 export function NoticesPage({ profile }: NoticesPageProps) {
-  const isTrainer = profile.role === "trainer"
+  const isTrainer = profile.role !== "member"
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Notice | null>(null)
 

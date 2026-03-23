@@ -14,7 +14,7 @@ export default async function Page() {
     .eq("id", user.id)
     .single()
 
-  if (profile?.role !== "trainer") {
+  if (profile?.role !== "trainer" && profile?.role !== "admin") {
     redirect("/")
   }
 

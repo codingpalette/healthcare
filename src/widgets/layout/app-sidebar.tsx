@@ -47,7 +47,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
   const router = useRouter()
   const { setOpenMobile } = useSidebar()
 
-  const roleLabel = profile.role === "trainer" ? "트레이너" : "회원"
+  const roleLabel = profile.role === "admin" ? "관리자" : profile.role === "trainer" ? "트레이너" : "회원"
   const initials = profile.name.slice(0, 1)
 
   // 역할에 따른 네비게이션 메뉴 구성

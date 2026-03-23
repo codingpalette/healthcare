@@ -256,7 +256,7 @@ workoutRoutes.get("/me", async (c) => {
 
 workoutRoutes.get("/today", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -284,7 +284,7 @@ workoutRoutes.get("/today", async (c) => {
 
 workoutRoutes.get("/members/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
   }
 
@@ -417,7 +417,7 @@ workoutRoutes.patch("/:id", async (c) => {
 
 workoutRoutes.patch("/:id/feedback", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 피드백을 작성할 수 있습니다" }, 403)
   }
 

@@ -27,7 +27,7 @@ foodItemRoutes.get("/", async (c) => {
 // POST / - 음식 등록 (트레이너 전용)
 foodItemRoutes.post("/", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 음식을 등록할 수 있습니다" }, 403)
   }
 
@@ -71,7 +71,7 @@ foodItemRoutes.post("/", async (c) => {
 // PATCH /:id - 음식 수정 (트레이너 전용)
 foodItemRoutes.patch("/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 음식을 수정할 수 있습니다" }, 403)
   }
 
@@ -114,7 +114,7 @@ foodItemRoutes.patch("/:id", async (c) => {
 // DELETE /:id - 음식 삭제 (트레이너 전용)
 foodItemRoutes.delete("/:id", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
+  if (userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "트레이너만 음식을 삭제할 수 있습니다" }, 403)
   }
 

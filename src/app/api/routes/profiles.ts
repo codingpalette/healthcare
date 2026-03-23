@@ -30,8 +30,8 @@ profilesRoutes.get("/me", async (c) => {
 
 profilesRoutes.post("/members", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
-    return c.json({ error: "트레이너만 회원을 생성할 수 있습니다" }, 403)
+  if (userRole !== "trainer" && userRole !== "admin") {
+    return c.json({ error: "트레이너 또는 관리자만 회원을 생성할 수 있습니다" }, 403)
   }
 
   const body = await c.req.json<{
@@ -89,8 +89,8 @@ profilesRoutes.post("/members", async (c) => {
 
 profilesRoutes.get("/members", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
-    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  if (userRole !== "trainer" && userRole !== "admin") {
+    return c.json({ error: "트레이너 또는 관리자만 조회할 수 있습니다" }, 403)
   }
 
   const adminSupabase = createAdminSupabase()
@@ -168,19 +168,26 @@ profilesRoutes.post("/me/avatar", async (c) => {
 
 profilesRoutes.get("/my-members", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
-    return c.json({ error: "트레이너만 조회할 수 있습니다" }, 403)
+  if (userRole !== "trainer" && userRole !== "admin") {
+    return c.json({ error: "트레이너 또는 관리자만 조회할 수 있습니다" }, 403)
   }
 
   const userId = c.get("userId")
   const adminSupabase = createAdminSupabase()
-  const { data, error } = await adminSupabase
+
+  // admin은 모든 회원 조회, trainer는 자신에게 배정된 회원만 조회
+  let query = adminSupabase
     .from("profiles")
     .select("*")
-    .eq("trainer_id", userId)
     .eq("role", "member")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
+
+  if (userRole !== "admin") {
+    query = query.eq("trainer_id", userId)
+  }
+
+  const { data, error } = await query
 
   if (error) return c.json({ error: error.message }, 400)
 
@@ -195,15 +202,16 @@ profilesRoutes.get("/my-members", async (c) => {
 
 profilesRoutes.patch("/:id/assign-trainer", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
-    return c.json({ error: "트레이너만 배정할 수 있습니다" }, 403)
+  if (userRole !== "trainer" && userRole !== "admin") {
+    return c.json({ error: "트레이너 또는 관리자만 배정할 수 있습니다" }, 403)
   }
 
   const userId = c.get("userId")
   const targetId = c.req.param("id")
   const body = await c.req.json<{ trainerId?: string }>()
 
-  if (body.trainerId !== userId) {
+  // admin은 어떤 트레이너든 배정 가능, trainer는 본인만 배정 가능
+  if (userRole !== "admin" && body.trainerId !== userId) {
     return c.json({ error: "본인만 트레이너로 배정할 수 있습니다" }, 403)
   }
 
@@ -237,8 +245,8 @@ profilesRoutes.patch("/:id/assign-trainer", async (c) => {
 
 profilesRoutes.patch("/:id/unassign-trainer", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
-    return c.json({ error: "트레이너만 해제할 수 있습니다" }, 403)
+  if (userRole !== "trainer" && userRole !== "admin") {
+    return c.json({ error: "트레이너 또는 관리자만 해제할 수 있습니다" }, 403)
   }
 
   const userId = c.get("userId")
@@ -254,7 +262,8 @@ profilesRoutes.patch("/:id/unassign-trainer", async (c) => {
   if (targetError || !target) {
     return c.json({ error: "대상 회원을 찾을 수 없습니다" }, 404)
   }
-  if (target.trainer_id !== userId) {
+  // admin은 누구든 해제 가능, trainer는 본인 배정 회원만
+  if (userRole !== "admin" && target.trainer_id !== userId) {
     return c.json({ error: "본인에게 배정된 회원만 해제할 수 있습니다" }, 403)
   }
 
@@ -274,7 +283,7 @@ profilesRoutes.patch("/:id", async (c) => {
   const targetId = c.req.param("id")
   const userRole = c.get("userRole")
 
-  if (userId !== targetId && userRole !== "trainer") {
+  if (userId !== targetId && userRole !== "trainer" && userRole !== "admin") {
     return c.json({ error: "본인의 프로필만 수정할 수 있습니다" }, 403)
   }
 
@@ -301,8 +310,8 @@ profilesRoutes.patch("/:id/role", async (c) => {
   }
 
   const body = await c.req.json<{ role?: string }>()
-  if (!body.role || !["member", "trainer"].includes(body.role)) {
-    return c.json({ error: "올바른 권한을 지정해주세요 (member 또는 trainer)" }, 400)
+  if (!body.role || !["member", "trainer", "admin"].includes(body.role)) {
+    return c.json({ error: "올바른 권한을 지정해주세요 (member, trainer 또는 admin)" }, 400)
   }
 
   const adminSupabase = createAdminSupabase()
@@ -320,8 +329,8 @@ profilesRoutes.patch("/:id/role", async (c) => {
 
 profilesRoutes.patch("/:id/soft-delete", async (c) => {
   const userRole = c.get("userRole")
-  if (userRole !== "trainer") {
-    return c.json({ error: "트레이너만 삭제할 수 있습니다" }, 403)
+  if (userRole !== "trainer" && userRole !== "admin") {
+    return c.json({ error: "트레이너 또는 관리자만 삭제할 수 있습니다" }, 403)
   }
 
   const targetId = c.req.param("id")

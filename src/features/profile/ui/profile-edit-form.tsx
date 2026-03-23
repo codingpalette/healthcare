@@ -33,7 +33,7 @@ export function ProfileEditForm() {
 
   if (!profile) return null
 
-  const roleLabel = profile.role === "trainer" ? "트레이너" : "회원"
+  const roleLabel = profile.role === "admin" ? "관리자" : profile.role === "trainer" ? "트레이너" : "회원"
   const initials = profile.name.slice(0, 1)
 
   const handleAvatarClick = () => {

@@ -484,7 +484,7 @@ export function ChatBoard({ profile }: { profile: Profile }) {
   }
 
   const emptyLabel =
-    profile.role === "trainer"
+    profile.role !== "member"
       ? "배정된 회원이 없어 관리톡을 시작할 수 없습니다."
       : "배정된 트레이너가 없어 관리톡을 시작할 수 없습니다."
 
@@ -593,7 +593,7 @@ export function ChatBoard({ profile }: { profile: Profile }) {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {profile.role === "trainer"
+                    {profile.role !== "member"
                       ? "운동·식단 인증과 피드백을 관리하는 대화입니다."
                       : "인증 기록을 공유하고 피드백을 주고받는 대화입니다."}
                   </p>
@@ -602,7 +602,7 @@ export function ChatBoard({ profile }: { profile: Profile }) {
 
               <div className="mt-4 border-b pb-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  {profile.role === "trainer" ? (
+                  {profile.role !== "member" ? (
                     <Button
                       type="button"
                       variant={composerMode === "feedback" && !editingMessage ? "default" : "outline"}

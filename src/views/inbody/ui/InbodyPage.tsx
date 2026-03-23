@@ -5,7 +5,7 @@ import { InbodyMemberTable } from "@/widgets/inbody/inbody-member-table"
 import { InbodyRecordList } from "@/widgets/inbody/inbody-record-list"
 
 export function InbodyPage({ profile }: { profile: Profile }) {
-  if (profile.role === "trainer") {
+  if (profile.role !== "member") {
     return (
       <div className="space-y-6">
         <div>

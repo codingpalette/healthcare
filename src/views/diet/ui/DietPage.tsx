@@ -11,7 +11,7 @@ interface DietPageProps {
 
 // 식단 관리 페이지 - 역할에 따라 다른 뷰 렌더링
 export function DietPage({ profile }: DietPageProps) {
-  if (profile.role === "trainer") {
+  if (profile.role !== "member") {
     return (
       <div className="space-y-6">
         <div>
