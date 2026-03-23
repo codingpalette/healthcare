@@ -600,58 +600,7 @@ export function ChatBoard({ profile }: { profile: Profile }) {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto py-4">
-                {isMessagesLoading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Skeleton key={index} className="h-24 w-full" />
-                    ))}
-                  </div>
-                ) : !(messages?.length ?? 0) ? (
-                  <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                    <div className="rounded-full bg-primary/10 p-4 text-primary">
-                      <MessagesSquare className="size-8" />
-                    </div>
-                    <div>
-                      <p className="font-medium">아직 대화가 없습니다</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        첫 메시지를 보내 관리톡을 시작해보세요.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {hasNextPage && (
-                      <div className="flex justify-center pb-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => fetchNextPage()}
-                          disabled={isFetchingNextPage}
-                        >
-                          {isFetchingNextPage ? "불러오는 중..." : "이전 메시지 보기"}
-                        </Button>
-                      </div>
-                    )}
-                    {messages?.map((message) => (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        isMine={message.senderId === profile.id}
-                        counterpartLastReadAt={selectedRoom.counterpartLastReadAt}
-                        onEdit={(target) => {
-                          setEditingMessage(target)
-                          setDraft(target.content ?? "")
-                          setComposerMode(target.messageType === "feedback" ? "feedback" : "text")
-                        }}
-                        onDelete={setMessageToDelete}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t pt-4">
+              <div className="mt-4 border-b pb-4">
                 <div className="flex flex-wrap items-center gap-2">
                   {profile.role === "trainer" ? (
                     <Button
@@ -721,6 +670,57 @@ export function ChatBoard({ profile }: { profile: Profile }) {
                     <Link href="/workout" className="ml-1 underline underline-offset-4">운동</Link>
                     페이지에서 확인하세요.
                   </p>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-4">
+                {isMessagesLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Skeleton key={index} className="h-24 w-full" />
+                    ))}
+                  </div>
+                ) : !(messages?.length ?? 0) ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                    <div className="rounded-full bg-primary/10 p-4 text-primary">
+                      <MessagesSquare className="size-8" />
+                    </div>
+                    <div>
+                      <p className="font-medium">아직 대화가 없습니다</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        첫 메시지를 보내 관리톡을 시작해보세요.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {messages?.map((message) => (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        isMine={message.senderId === profile.id}
+                        counterpartLastReadAt={selectedRoom.counterpartLastReadAt}
+                        onEdit={(target) => {
+                          setEditingMessage(target)
+                          setDraft(target.content ?? "")
+                          setComposerMode(target.messageType === "feedback" ? "feedback" : "text")
+                        }}
+                        onDelete={setMessageToDelete}
+                      />
+                    ))}
+                    {hasNextPage && (
+                      <div className="flex justify-center pt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => fetchNextPage()}
+                          disabled={isFetchingNextPage}
+                        >
+                          {isFetchingNextPage ? "불러오는 중..." : "이전 메시지 보기"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </CardContent>

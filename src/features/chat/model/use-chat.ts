@@ -37,11 +37,11 @@ export function useChatMessages(roomId: string | null) {
     enabled: !!roomId,
   })
 
-  // 모든 페이지의 메시지를 하나의 배열로 합침 (오래된 순)
+  // 모든 페이지의 메시지를 하나의 배열로 합침 (최신 순)
   const messages = useMemo(() => {
     if (!query.data?.pages) return []
-    // pages는 최신→오래된 순으로 쌓이므로 reverse 후 flatMap
-    return [...query.data.pages].reverse().flatMap((page) => page.messages)
+    // pages는 최신→오래된 순, 각 페이지 내 메시지도 역순으로 변환하여 최신이 위로
+    return query.data.pages.flatMap((page) => [...page.messages].reverse())
   }, [query.data?.pages])
 
   return {
