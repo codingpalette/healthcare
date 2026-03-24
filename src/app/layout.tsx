@@ -16,8 +16,8 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-const APP_NAME = "헬스케어"
-const APP_DESCRIPTION = "헬스장 맞춤형 헬스케어 플랫폼"
+const APP_NAME = "웨스트짐"
+const APP_DESCRIPTION = "헬스장 맞춤형 웨스트짐 플랫폼"
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,

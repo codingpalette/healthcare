@@ -34,7 +34,7 @@ self.addEventListener("push", (event) => {
   if (!event.data) return
 
   const data = event.data.json()
-  const title = data.title || "Healthcare 알림"
+  const title = data.title || "웨스트짐 알림"
   const options = {
     body: data.body || "",
     icon: "/appIcons/android/mipmap-xxxhdpi/ic_launcher.png",

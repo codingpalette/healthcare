@@ -1,4 +1,4 @@
-# Healthcare Platform - TODO
+# WestGym Platform - TODO
 
 ## 완료
 - [x] 프로젝트 초기 구성 (Next.js 16, Tailwind v4, shadcn, Supabase)

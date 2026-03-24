@@ -9,7 +9,7 @@ export default function LoginPage() {
       <div className="relative hidden desktop:block">
         <Image
           src="/login_back.jpg"
-          alt="헬스케어 플랫폼"
+          alt="웨스트짐 플랫폼"
           fill
           className="object-cover"
           priority

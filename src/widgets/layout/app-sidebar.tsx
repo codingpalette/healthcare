@@ -68,7 +68,7 @@ export function AppSidebar({ profile }: AppSidebarProps) {
                 H
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Healthcare</span>
+                <span className="truncate font-semibold">웨스트짐</span>
                 <span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
               </div>
             </SidebarMenuButton>

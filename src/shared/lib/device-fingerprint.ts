@@ -1,4 +1,4 @@
-const DEVICE_ID_KEY = "healthcare_device_id"
+const DEVICE_ID_KEY = "westgym_device_id"
 
 /**
  * User-Agent + 화면 정보 기반 기기 fingerprint 생성

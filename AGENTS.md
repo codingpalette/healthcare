@@ -1,7 +1,7 @@
-# Healthcare Platform - Codex Rules
+# WestGym Platform - Codex Rules
 
 ## 프로젝트 개요
-헬스장 맞춤형 헬스케어 플랫폼. 회원-트레이너 연결 웹 서비스.
+헬스장 맞춤형 웨스트짐 플랫폼. 회원-트레이너 연결 웹 서비스.
 
 ## 기술 스택
 - **Framework:** Next.js 16 (App Router, Turbopack)

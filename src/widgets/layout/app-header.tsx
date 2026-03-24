@@ -29,7 +29,7 @@ export function AppHeader() {
   const pathname = usePathname()
   const title =
     Object.entries(pageTitles).find(([href]) => (href === "/" ? pathname === "/" : pathname.startsWith(href)))?.[1] ??
-    "Healthcare"
+    "웨스트짐"
 
   return (
     <header className="sticky top-0 z-40 flex shrink-0 items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)] h-[calc(3.5rem+env(safe-area-inset-top))]">
