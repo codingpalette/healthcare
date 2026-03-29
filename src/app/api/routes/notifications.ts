@@ -82,8 +82,21 @@ async function syncTrainerNotifications(
 
   if (!members?.length) return
 
-  const memberIds = members.map((member) => member.id as string)
-  const memberNameMap = new Map(members.map((member) => [member.id as string, member.name as string]))
+  // 유효한 회원권이 있는 회원만 필터링 (만료/미등록 회원 제외)
+  const today = new Date().toISOString().split("T")[0]
+  const { data: activeMemberships } = await adminSupabase
+    .from("memberships")
+    .select("member_id")
+    .in("member_id", members.map((m) => m.id as string))
+    .gte("end_date", today)
+
+  const activeMemberIds = new Set((activeMemberships ?? []).map((m) => m.member_id as string))
+  const activeMembers = members.filter((m) => activeMemberIds.has(m.id as string))
+
+  if (!activeMembers.length) return
+
+  const memberIds = activeMembers.map((member) => member.id as string)
+  const memberNameMap = new Map(activeMembers.map((member) => [member.id as string, member.name as string]))
 
   if (options.attendanceEnabled) {
     const today = new Date()
