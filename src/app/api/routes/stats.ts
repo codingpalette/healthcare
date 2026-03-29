@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
-import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
+import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
 export const statsRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)

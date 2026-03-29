@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
-import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
+import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 
@@ -65,7 +65,7 @@ exerciseRoutes.post("/", async (c) => {
   let description: string | undefined
   let precautions: string | undefined
   let youtubeUrl: string | undefined
-  let imageUrls: string[] = []
+  const imageUrls: string[] = []
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()

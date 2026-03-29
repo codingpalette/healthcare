@@ -20,9 +20,12 @@ const pageTitles: Record<string, string> = {
   "/members": "회원 관리",
   "/notifications": "알림",
   "/settings": "설정",
-  "/qna": "Q&A",
   "/guide": "운동 DB",
   "/food-items": "음식 DB 관리",
+  "/records": "기록",
+  "/community": "커뮤니티",
+  "/notices": "공지사항",
+  "/stats": "통계",
 }
 
 export function AppHeader() {

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { Activity, Scale, TrendingUp } from "lucide-react"
 import type { InbodyRecord } from "@/entities/inbody"
-import { buildMonthlyTrendData } from "@/shared/lib/inbody"
+import { buildMonthlyTrendData } from "@/entities/inbody"
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui"
 
 type MetricKey = "weight" | "skeletalMuscleMass" | "bodyFatPercentage"

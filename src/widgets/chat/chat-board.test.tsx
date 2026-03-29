@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { Profile } from "@/entities/user"
 
 import { ChatBoard } from "./chat-board"
@@ -39,7 +39,8 @@ vi.mock("@/features/chat", () => ({
     isLoading: false,
   }),
   useChatMessages: () => ({
-    data: [
+    data: { pages: [] },
+    messages: [
       {
         id: "message-1",
         roomId: "room-1",
@@ -55,6 +56,9 @@ vi.mock("@/features/chat", () => ({
       },
     ],
     isLoading: false,
+    hasNextPage: false,
+    fetchNextPage: vi.fn(),
+    isFetchingNextPage: false,
   }),
   useSendChatMessage: () => ({
     mutateAsync: sendMessageMock,
@@ -111,12 +115,15 @@ describe("ChatBoard", () => {
     cleanup()
   })
 
-  it("선택된 대화방의 메시지와 읽음 처리를 보여준다", () => {
+  it("선택된 대화방의 메시지와 읽음 처리를 보여준다", async () => {
     render(<ChatBoard profile={memberProfile} />)
 
-    expect(screen.getAllByText("코치 민수").length).toBeGreaterThan(0)
-    expect(screen.getByText("오늘은 스쿼트 자세를 더 천천히 가져가보세요.")).toBeInTheDocument()
-    expect(markReadMock).toHaveBeenCalledWith("room-1")
+    // useEffect로 첫 번째 방이 선택될 때까지 대기
+    await waitFor(() => {
+      expect(screen.getAllByText("코치 민수").length).toBeGreaterThan(0)
+      expect(screen.getByText("오늘은 스쿼트 자세를 더 천천히 가져가보세요.")).toBeInTheDocument()
+      expect(markReadMock).toHaveBeenCalledWith("room-1")
+    })
   })
 
   it("메시지를 입력하고 전송 버튼을 누르면 text 메시지를 전송한다", () => {

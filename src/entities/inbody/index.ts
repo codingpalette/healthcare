@@ -16,4 +16,13 @@ export type {
   InbodyRecordWithProfile,
   InbodyReminderInput,
   InbodyReminderSetting,
+  InbodyTrendPoint,
+} from "./model"
+export {
+  buildMonthlyTrendData,
+  formatLocalDateValue,
+  formatReminderText,
+  getMonthRange,
+  getNextReminderDate,
+  parseDateValue,
 } from "./model"

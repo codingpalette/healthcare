@@ -35,7 +35,7 @@ export function RecentQnaCard() {
           </p>
         </div>
         <Link
-          href="/qna"
+          href="/chat"
           className={cn(
             buttonVariants({ size: "sm", variant: "outline" }),
             "w-full"

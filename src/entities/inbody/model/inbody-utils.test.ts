@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import type { InbodyRecord, InbodyReminderSetting } from "@/entities/inbody"
+import type { InbodyRecord, InbodyReminderSetting } from "./types"
 
-import { buildMonthlyTrendData, getNextReminderDate } from "./inbody"
+import { buildMonthlyTrendData, getNextReminderDate } from "./inbody-utils"
 
 describe("inbody utils", () => {
   it("다음 측정 알림 날짜를 이번 달 또는 다음 달로 계산한다", () => {

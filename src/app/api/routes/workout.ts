@@ -4,7 +4,7 @@ import {
   getNotificationPreferencesRow,
 } from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
-import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
+import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { deletePublicFile, deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 
@@ -115,7 +115,7 @@ workoutRoutes.post("/", async (c) => {
   let caloriesBurned: string | undefined
   let notes: string | undefined
   let date: string | undefined
-  let mediaUrls: string[] = []
+  const mediaUrls: string[] = []
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await c.req.formData()

@@ -1,4 +1,4 @@
-import type { InbodyRecord, InbodyReminderSetting } from "@/entities/inbody"
+import type { InbodyRecord, InbodyReminderSetting } from "./types"
 
 export function formatLocalDateValue(date: Date) {
   const year = date.getFullYear()

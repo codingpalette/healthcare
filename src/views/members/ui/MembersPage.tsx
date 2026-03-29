@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import type { Profile } from "@/entities/user"
-import { AddMemberForm, EditMemberForm } from "@/features/member-management"
+import { AddMemberForm } from "@/features/member-management"
+import { EditMemberForm } from "@/widgets/member-management/edit-member-form"
 import { MemberListTable } from "@/widgets/member"
 import {
   Card,

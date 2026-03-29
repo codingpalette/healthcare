@@ -1,8 +1,7 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
   CalendarDays,
   ChevronLeft,
@@ -115,12 +114,6 @@ function WorkoutDetailDialog({
   const ensureChatRoom = useEnsureChatRoom()
   const sendChatMessage = useSendChatMessage()
   const [feedback, setFeedback] = useState(workout?.trainerFeedback ?? "")
-  const [imageIndex, setImageIndex] = useState(0)
-
-  useEffect(() => {
-    setFeedback(workout?.trainerFeedback ?? "")
-    setImageIndex(0)
-  }, [workout])
 
   async function handleSaveFeedback() {
     if (!workout) return
@@ -439,6 +432,7 @@ export function WorkoutMemberTable() {
       </Card>
 
       <WorkoutDetailDialog
+        key={selectedWorkout?.id}
         workout={selectedWorkout}
         open={!!selectedWorkout}
         onOpenChange={(open) => {

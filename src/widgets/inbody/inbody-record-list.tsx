@@ -4,8 +4,8 @@ import { useMemo, useState } from "react"
 import { BellRing, Camera, Pencil, Plus, Trash2, Weight, X } from "lucide-react"
 import { ImageGallery } from "@/shared/ui/image-gallery"
 import type { InbodyRecord } from "@/entities/inbody"
+import { formatReminderText, getMonthRange, getNextReminderDate } from "@/entities/inbody"
 import { useDeleteInbodyRecord, useMyInbodyRecords, useMyInbodyReminder } from "@/features/inbody"
-import { formatReminderText, getMonthRange, getNextReminderDate } from "@/shared/lib/inbody"
 import {
   AlertDialog,
   AlertDialogAction,

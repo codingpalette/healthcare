@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from "react"
 import { CalendarIcon, Camera, Plus, X } from "lucide-react"
 import { toast } from "sonner"
 import type { InbodyInput, InbodyRecord } from "@/entities/inbody"
+import { formatLocalDateValue, parseDateValue } from "@/entities/inbody"
 import { useCreateInbodyRecord, useUpdateInbodyRecord } from "@/features/inbody"
 import { compressImageToWebP } from "@/shared/lib/media"
-import { formatLocalDateValue, parseDateValue } from "@/shared/lib/inbody"
 import {
   Button,
   Calendar,

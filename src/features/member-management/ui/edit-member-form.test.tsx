@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, fireEvent, waitFor, cleanup } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { EditMemberForm } from "./edit-member-form"
+import { EditMemberForm } from "@/widgets/member-management/edit-member-form"
 import type { Profile } from "@/entities/user"
 import { toast } from "sonner"
 

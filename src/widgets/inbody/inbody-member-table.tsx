@@ -5,13 +5,13 @@ import { BellRing, Camera, Save, Settings2, Users, X } from "lucide-react"
 import { ImageGallery } from "@/shared/ui/image-gallery"
 import { toast } from "sonner"
 import type { InbodyMemberOverview, InbodyRecord } from "@/entities/inbody"
+import { formatReminderText, getMonthRange, getNextReminderDate } from "@/entities/inbody"
 import {
   useMemberInbodyRecords,
   useMemberInbodyReminder,
   useTrainerInbodyOverview,
   useUpdateMemberInbodyReminder,
 } from "@/features/inbody"
-import { formatReminderText, getMonthRange, getNextReminderDate } from "@/shared/lib/inbody"
 import {
   Badge,
   Button,

@@ -2,7 +2,7 @@ import { Hono } from "hono"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { deletePublicFile, deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
-import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
+import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 
 export const inbodyRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 

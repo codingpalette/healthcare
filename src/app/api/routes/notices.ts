@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
-import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
+import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { uploadPublicFile } from "@/app/api/_lib/r2-storage"
 import { sendPushNotifications } from "@/app/api/_lib/web-push"

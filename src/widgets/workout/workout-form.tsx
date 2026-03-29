@@ -55,7 +55,6 @@ function ExerciseNameAutocomplete({
   id,
 }: ExerciseNameAutocompleteProps) {
   const [isFocused, setIsFocused] = useState(false)
-  const [showDropdown, setShowDropdown] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const debouncedValue = useDebounce(value, 300)
   const { data: suggestions } = useExerciseItemSearch(debouncedValue)
@@ -65,14 +64,11 @@ function ExerciseNameAutocomplete({
     return suggestions.slice(0, 5)
   }, [suggestions])
 
-  useEffect(() => {
-    setShowDropdown(isFocused && debouncedValue.length >= 2 && filteredSuggestions.length > 0)
-  }, [isFocused, debouncedValue, filteredSuggestions])
+  const shouldShowDropdown = isFocused && debouncedValue.length >= 2 && filteredSuggestions.length > 0
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setShowDropdown(false)
         setIsFocused(false)
       }
     }
@@ -91,7 +87,7 @@ function ExerciseNameAutocomplete({
         className={className}
         autoComplete="off"
       />
-      {showDropdown && (
+      {shouldShowDropdown && (
         <div className="absolute left-0 top-full z-50 mt-1 min-w-48 rounded-md border bg-popover shadow-md">
           {filteredSuggestions.map((item) => (
             <button
@@ -101,7 +97,7 @@ function ExerciseNameAutocomplete({
               onMouseDown={(e) => {
                 e.preventDefault()
                 onChange(item.name)
-                setShowDropdown(false)
+                setIsFocused(false)
               }}
             >
               <span>{item.name}</span>

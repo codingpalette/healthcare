@@ -23,7 +23,7 @@ import {
   useAssignTrainer,
   useUnassignTrainer,
   useDeleteMember,
-} from "@/features/member-management/model/use-members"
+} from "@/features/member-management"
 import { useMemberDevices, useRemoveMemberDevice, MemberDeviceList } from "@/features/device-management"
 import { MembershipSection } from "@/features/membership-management"
 

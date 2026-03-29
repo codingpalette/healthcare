@@ -4,7 +4,7 @@ import {
   getNotificationPreferencesRow,
 } from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
-import { membershipGuardMiddleware } from "@/shared/api/membership-guard-middleware"
+import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
 type ProfileRow = {
@@ -498,8 +498,8 @@ chatRoutes.post("/rooms/:id/messages", async (c) => {
       recordType: "meal",
       title: `${meal.meal_type === "breakfast" ? "아침" : meal.meal_type === "lunch" ? "점심" : meal.meal_type === "dinner" ? "저녁" : "간식"} 식단`,
       summary: meal.description ?? null,
-      mediaUrl: meal.photo_url ?? null,
-      mediaType: meal.photo_url ? "image" : null,
+      mediaUrl: ((meal.photo_urls as string[]) ?? [])[0] ?? null,
+      mediaType: (meal.photo_urls as string[])?.length ? "image" : null,
       date: meal.date ?? null,
       chips: [
         meal.calories != null ? `${meal.calories}kcal` : null,
@@ -527,8 +527,8 @@ chatRoutes.post("/rooms/:id/messages", async (c) => {
       recordType: "workout",
       title: workout.exercise_name,
       summary: workout.notes ?? null,
-      mediaUrl: workout.media_url ?? null,
-      mediaType: workout.media_type ?? null,
+      mediaUrl: ((workout.media_urls as string[]) ?? [])[0] ?? null,
+      mediaType: (workout.media_urls as string[])?.length ? "image" : null,
       date: workout.date ?? null,
       chips: [
         workout.sets != null ? `${workout.sets}세트` : null,
@@ -561,8 +561,8 @@ chatRoutes.post("/rooms/:id/messages", async (c) => {
       recordType: "meal",
       title: `${meal.meal_type === "breakfast" ? "아침" : meal.meal_type === "lunch" ? "점심" : meal.meal_type === "dinner" ? "저녁" : "간식"} 식단`,
       summary: meal.description ?? null,
-      mediaUrl: meal.photo_url ?? null,
-      mediaType: meal.photo_url ? "image" : null,
+      mediaUrl: ((meal.photo_urls as string[]) ?? [])[0] ?? null,
+      mediaType: (meal.photo_urls as string[])?.length ? "image" : null,
       date: meal.date ?? null,
       chips: [
         meal.calories != null ? `${meal.calories}kcal` : null,
@@ -594,8 +594,8 @@ chatRoutes.post("/rooms/:id/messages", async (c) => {
       recordType: "workout",
       title: workout.exercise_name,
       summary: workout.notes ?? null,
-      mediaUrl: workout.media_url ?? null,
-      mediaType: workout.media_type ?? null,
+      mediaUrl: ((workout.media_urls as string[]) ?? [])[0] ?? null,
+      mediaType: (workout.media_urls as string[])?.length ? "image" : null,
       date: workout.date ?? null,
       chips: [
         workout.sets != null ? `${workout.sets}세트` : null,

@@ -410,6 +410,8 @@ notificationsRoutes.put("/preferences/me", async (c) => {
     chatEnabled?: boolean
     feedbackEnabled?: boolean
     pushEnabled?: boolean
+    membershipEnabled?: boolean
+    noticeEnabled?: boolean
   }>()
 
   const { data, error } = await adminSupabase
@@ -422,6 +424,8 @@ notificationsRoutes.put("/preferences/me", async (c) => {
         chat_enabled: body.chatEnabled ?? true,
         feedback_enabled: body.feedbackEnabled ?? true,
         push_enabled: body.pushEnabled ?? false,
+        membership_enabled: body.membershipEnabled ?? true,
+        notice_enabled: body.noticeEnabled ?? true,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
