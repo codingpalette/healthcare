@@ -83,7 +83,7 @@ function renderTable(props: { onAdd?: () => void; onEdit?: () => void } = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const result = render(
     <QueryClientProvider client={qc}>
-      <MemberListTable currentUserId="current-user" onAdd={props.onAdd ?? vi.fn()} onEdit={props.onEdit ?? vi.fn()} />
+      <MemberListTable onAdd={props.onAdd ?? vi.fn()} onEdit={props.onEdit ?? vi.fn()} />
     </QueryClientProvider>
   )
   return result

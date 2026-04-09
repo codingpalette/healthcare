@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/shared/api/supabase"
 import {
@@ -38,11 +38,10 @@ export function useChatMessages(roomId: string | null) {
   })
 
   // 모든 페이지의 메시지를 하나의 배열로 합침 (최신 순)
-  const messages = useMemo(() => {
-    if (!query.data?.pages) return []
-    // pages는 최신→오래된 순, 각 페이지 내 메시지도 역순으로 변환하여 최신이 위로
-    return query.data.pages.flatMap((page) => [...page.messages].reverse())
-  }, [query.data?.pages])
+  // pages는 최신→오래된 순, 각 페이지 내 메시지도 역순으로 변환하여 최신이 위로
+  const messages = query.data?.pages
+    ? query.data.pages.flatMap((page) => [...page.messages].reverse())
+    : []
 
   return {
     ...query,

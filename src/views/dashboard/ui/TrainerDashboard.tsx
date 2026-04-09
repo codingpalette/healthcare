@@ -2,7 +2,6 @@
 
 import type { Profile } from "@/entities/user"
 import { PendingFeedbackCard } from "@/widgets/dashboard/pending-feedback-card"
-import { UnansweredQnaCard } from "@/widgets/dashboard/unanswered-qna-card"
 import { MemberOverviewCard } from "@/widgets/dashboard/member-overview-card"
 import { AttendanceOverviewCard } from "@/widgets/dashboard/attendance-overview-card"
 import { RecentNoticesCard } from "@/widgets/dashboard/recent-notices-card"

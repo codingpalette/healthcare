@@ -20,12 +20,11 @@ import {
 } from "@/shared/ui"
 
 interface MemberListTableProps {
-  currentUserId: string
   onAdd: () => void
   onEdit: (member: Profile) => void
 }
 
-export function MemberListTable({ currentUserId, onAdd, onEdit }: MemberListTableProps) {
+export function MemberListTable({ onAdd, onEdit }: MemberListTableProps) {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "member" | "trainer" | "mine">("all")
   const { data: members, isLoading } = useMembers()

@@ -403,6 +403,7 @@ export function ChatBoard({ profile }: { profile: Profile }) {
     room.counterpartName.toLowerCase().includes(keyword.toLowerCase())
   )
 
+  /* eslint-disable react-hooks/set-state-in-effect -- 방 자동 선택/대체 */
   useEffect(() => {
     if (!selectedRoomId && rooms?.length) {
       setSelectedRoomId(rooms[0].id)
@@ -414,6 +415,7 @@ export function ChatBoard({ profile }: { profile: Profile }) {
       setSelectedRoomId(rooms[0]?.id ?? null)
     }
   }, [rooms, selectedRoomId])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const {
     messages,

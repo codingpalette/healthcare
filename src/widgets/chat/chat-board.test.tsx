@@ -5,7 +5,9 @@ import type { Profile } from "@/entities/user"
 import { ChatBoard } from "./chat-board"
 
 vi.mock("next/image", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   default: ({ unoptimized: _unoptimized, ...props }: Record<string, unknown>) => (
+    // eslint-disable-next-line @next/next/no-img-element
     <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} alt={props.alt as string} />
   ),
 }))

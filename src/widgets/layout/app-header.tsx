@@ -51,6 +51,7 @@ function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 하이드레이션 마운트 감지
   useEffect(() => setMounted(true), [])
 
   if (!mounted) {

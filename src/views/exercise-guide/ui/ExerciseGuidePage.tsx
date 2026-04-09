@@ -21,7 +21,7 @@ export function ExerciseGuidePage({ profile }: ExerciseGuidePageProps) {
   const searchParams = useSearchParams()
   const { data: exerciseItemList } = useExerciseItemList()
 
-  // ?id= 쿼리 파라미터로 운동 항목 자동 열기
+  /* eslint-disable react-hooks/set-state-in-effect -- URL 파라미터 기반 자동 열기 */
   useEffect(() => {
     const id = searchParams.get("id")
     if (id && exerciseItemList && !selectedExerciseItem) {
@@ -29,6 +29,7 @@ export function ExerciseGuidePage({ profile }: ExerciseGuidePageProps) {
       if (found) setSelectedExerciseItem(found)
     }
   }, [searchParams, exerciseItemList, selectedExerciseItem])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleAdd = () => {
     setEditTarget(null)

@@ -3,7 +3,6 @@
 import type { Profile } from "@/entities/user"
 import {
   ExerciseShortcutCard,
-  RecentQnaCard,
   TodayDietCard,
   TodayWorkoutCard,
 } from "@/widgets/dashboard"

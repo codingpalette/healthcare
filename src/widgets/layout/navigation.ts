@@ -7,11 +7,9 @@ import {
   CalendarCheck,
   ClipboardList,
   LayoutDashboard,
-  MessageCircle,
   Megaphone,
   MessageCircleHeart,
   MessagesSquare,
-  Shield,
   Utensils,
   Users,
 } from "lucide-react"

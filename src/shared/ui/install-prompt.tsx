@@ -39,6 +39,7 @@ export function InstallPrompt() {
   const [showIOSGuide, setShowIOSGuide] = useState(false)
   const [visible, setVisible] = useState(false)
 
+  /* eslint-disable react-hooks/set-state-in-effect -- 마운트 시 플랫폼 감지 */
   useEffect(() => {
     // 이미 설치된 앱이거나 최근 닫은 경우 표시하지 않음
     if (isStandalone() || isDismissed()) return
@@ -58,6 +59,7 @@ export function InstallPrompt() {
     window.addEventListener("beforeinstallprompt", handleBeforeInstall)
     return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall)
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function dismiss() {
     setVisible(false)

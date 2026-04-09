@@ -24,10 +24,6 @@ import {
 } from "@/features/community"
 import { cn } from "@/shared/lib/utils"
 
-interface CommunityBoardProps {
-  userId: string
-}
-
 // 날짜 구분선 라벨 포맷
 function formatDateLabel(createdAt: string): string {
   return new Date(createdAt).toLocaleDateString("ko-KR", {
@@ -57,7 +53,7 @@ function RealtimeSubscriber() {
   return null
 }
 
-export function CommunityBoard({ userId: _userId }: CommunityBoardProps) {
+export function CommunityBoard() {
   const { data: status, isLoading } = useCommunityStatus()
   const isJoined = status?.joined ?? false
 

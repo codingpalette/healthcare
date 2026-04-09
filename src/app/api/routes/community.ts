@@ -3,21 +3,6 @@ import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 
-type CommunityMemberRow = {
-  id: string
-  user_id: string
-  nickname: string
-  joined_at: string
-  left_at: string | null
-}
-
-type CommunityMessageRow = {
-  id: string
-  member_id: string
-  content: string
-  created_at: string
-}
-
 export const communityRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 
 // 현재 사용자의 커뮤니티 참여 상태 조회

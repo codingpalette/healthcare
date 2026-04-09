@@ -34,6 +34,7 @@ export function MembershipSection({ memberId }: MembershipSectionProps) {
   const [endDate, setEndDate] = useState("")
   const [memo, setMemo] = useState("")
 
+  /* eslint-disable react-hooks/set-state-in-effect -- 서버 데이터로 폼 초기화 */
   useEffect(() => {
     if (membership) {
       setStartDate(membership.startDate)
@@ -45,6 +46,7 @@ export function MembershipSection({ memberId }: MembershipSectionProps) {
       setMemo("")
     }
   }, [membership])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const { mutate: createMembership, isPending: isCreating } = useCreateMembership()
   const { mutate: updateMembership, isPending: isUpdating } = useUpdateMembership()

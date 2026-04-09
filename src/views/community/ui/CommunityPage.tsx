@@ -2,11 +2,7 @@
 
 import { CommunityBoard } from "@/widgets/community"
 
-interface CommunityPageProps {
-  userId: string
-}
-
-export function CommunityPage({ userId }: CommunityPageProps) {
+export function CommunityPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -15,7 +11,7 @@ export function CommunityPage({ userId }: CommunityPageProps) {
           익명 닉네임으로 다른 회원들과 자유롭게 대화하세요.
         </p>
       </div>
-      <CommunityBoard userId={userId} />
+      <CommunityBoard />
     </div>
   )
 }

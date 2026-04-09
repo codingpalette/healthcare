@@ -182,13 +182,14 @@ export function NoticeForm({ open, onOpenChange, editTarget }: NoticeFormProps) 
     e.target.value = ""
   }, [editorInstance, uploadImage])
 
-  // editTarget이 바뀌면 폼 초기화
+  /* eslint-disable react-hooks/set-state-in-effect -- editTarget 변경 시 폼 초기화 */
   useEffect(() => {
     setTitle(editTarget?.title ?? "")
     setCategory(editTarget?.category ?? "general")
     setIsPinned(editTarget?.isPinned ?? false)
     setContent((editTarget?.content as JSONContent | null) ?? EMPTY_CONTENT)
   }, [editTarget])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isPending = createNotice.isPending || updateNotice.isPending
 

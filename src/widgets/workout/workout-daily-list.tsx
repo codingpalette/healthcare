@@ -31,7 +31,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Badge,
   Button,
   Calendar,
   Card,
@@ -94,8 +93,6 @@ function WorkoutDetailDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const [imageIndex, setImageIndex] = useState(0)
-
   if (!workout) return null
 
   return (

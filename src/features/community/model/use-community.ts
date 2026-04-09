@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/shared/api/supabase"
 import {
@@ -34,10 +34,9 @@ export function useCommunityMessages() {
     enabled: true, // will be conditionally enabled in component
   })
 
-  const messages = useMemo(() => {
-    if (!query.data?.pages) return []
-    return [...query.data.pages].reverse().flatMap((page) => page.messages)
-  }, [query.data?.pages])
+  const messages = query.data?.pages
+    ? [...query.data.pages].reverse().flatMap((page) => page.messages)
+    : []
 
   return { ...query, messages }
 }

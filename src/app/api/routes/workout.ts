@@ -6,7 +6,7 @@ import {
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
 import { membershipGuardMiddleware } from "@/app/api/_lib/membership-guard-middleware"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
-import { deletePublicFile, deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
+import { deletePublicFiles, uploadPublicFile } from "@/app/api/_lib/r2-storage"
 
 export const workoutRoutes = new Hono<AuthEnv>().use(authMiddleware).use(membershipGuardMiddleware)
 const MAX_WORKOUT_IMAGE_BYTES = 10 * 1024 * 1024

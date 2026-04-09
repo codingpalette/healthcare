@@ -35,7 +35,6 @@ export function MembersPage({ currentUserId }: MembersPageProps) {
       <Card className="border-0 shadow-md">
         <CardContent className="p-4 sm:p-6">
           <MemberListTable
-            currentUserId={currentUserId}
             onAdd={() => setAddOpen(true)}
             onEdit={(member) => setEditMember(member)}
           />

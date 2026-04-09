@@ -10,5 +10,5 @@ export default async function Page() {
 
   if (!user) return null
 
-  return <CommunityPage userId={user.id} />
+  return <CommunityPage />
 }
