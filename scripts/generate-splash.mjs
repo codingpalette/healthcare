@@ -43,7 +43,11 @@ async function generateSplash() {
   await mkdir(OUTPUT_DIR, { recursive: true });
 
   // 원본 아이콘 로드
-  const iconBuffer = await sharp(ICON_PATH).png().toBuffer();
+  const iconBuffer = await sharp(ICON_PATH)
+    .flatten({ background: BG_COLOR })
+    .removeAlpha()
+    .png()
+    .toBuffer();
 
   console.log(`스플래시 이미지 생성 시작 (${SPLASH_SIZES.length}개)...\n`);
 
@@ -55,6 +59,8 @@ async function generateSplash() {
     // 아이콘 리사이즈
     const resizedIcon = await sharp(iconBuffer)
       .resize(iconSize, iconSize, { fit: "contain", background: BG_COLOR })
+      .flatten({ background: BG_COLOR })
+      .removeAlpha()
       .png()
       .toBuffer();
 
@@ -64,11 +70,13 @@ async function generateSplash() {
       create: {
         width: size.width,
         height: size.height,
-        channels: 4,
+        channels: 3,
         background: BG_COLOR,
       },
     })
       .composite([{ input: resizedIcon, left, top }])
+      .flatten({ background: BG_COLOR })
+      .removeAlpha()
       .png()
       .toFile(outputPath);
 
