@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -64,8 +65,16 @@ export function AppSidebar({ profile }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/" />}>
-              <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
-                H
+              <div className="flex size-8 items-center justify-center overflow-hidden rounded-lg bg-background shadow-xs ring-1 ring-border/60">
+                <Image
+                  src="/appIcons/playstore.png"
+                  alt="웨스트짐 로고"
+                  width={32}
+                  height={32}
+                  className="size-full object-cover"
+                  priority
+                  unoptimized
+                />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">웨스트짐</span>
