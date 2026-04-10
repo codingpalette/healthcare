@@ -164,6 +164,9 @@ export function AttendanceCheckCard() {
             <ArrowRight className="size-3" />
           </Link>
         </div>
+        <p className="text-xs text-muted-foreground">
+          체크아웃하지 않으면 당일 23:59:59에 자동 종료됩니다.
+        </p>
       </CardContent>
     </Card>
   )
