@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: APP_NAME,
   },
   formatDetection: {
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -84,7 +84,7 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
       </head>
-      <body>
+      <body style={{ backgroundColor: "#ffffff" }}>
         <ThemeProvider>
           <TooltipProvider>
             <QueryProvider>{children}</QueryProvider>

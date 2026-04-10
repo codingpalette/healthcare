@@ -117,15 +117,19 @@
 }
 
 @layer base {
+  html {
+    background-color: #ffffff;
+  }
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
+    background-color: #ffffff;
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
 }
 
 /* Sonner 토스트: iOS PWA safe-area 대응 */
