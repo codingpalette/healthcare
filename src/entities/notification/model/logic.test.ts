@@ -39,4 +39,17 @@ describe("notification logic", () => {
     expect(isThreeDayAbsence(absentSet, today)).toBe(true)
     expect(isThreeDayAbsence(presentSet, today)).toBe(false)
   })
+
+  it("KST 자정 직후에도 최근 3일 날짜를 KST 기준으로 계산한다", () => {
+    const justAfterMidnightKst = new Date("2026-04-11T00:24:00+09:00")
+
+    expect(getPreviousDateStrings(3, justAfterMidnightKst)).toEqual([
+      "2026-04-08",
+      "2026-04-09",
+      "2026-04-10",
+    ])
+
+    const presentSet = new Set<string>(["2026-04-10"])
+    expect(isThreeDayAbsence(presentSet, justAfterMidnightKst)).toBe(false)
+  })
 })

@@ -2,9 +2,11 @@ import { Hono } from "hono"
 import { createAdminSupabase } from "@/app/api/_lib/supabase"
 import { createNotificationIfNeeded, getNotificationPreferencesRow } from "@/app/api/_lib/notifications"
 import { authMiddleware, type AuthEnv } from "@/shared/api/hono-auth-middleware"
+import { getKstDateRange, getTodayKstDateString } from "@/shared/lib/attendance-date"
 import {
   formatKstDate,
   getCurrentMonthKey,
+  getPreviousDateStrings,
   isThreeDayAbsence,
   shouldCreateInbodyReminder,
 } from "@/entities/notification/model/logic"
@@ -100,19 +102,17 @@ async function syncTrainerNotifications(
 
   if (options.attendanceEnabled) {
     const today = new Date()
-    const attendanceStart = new Date(today)
-    attendanceStart.setDate(today.getDate() - 3)
-    attendanceStart.setHours(0, 0, 0, 0)
-    const attendanceEnd = new Date(today)
-    attendanceEnd.setDate(today.getDate() - 1)
-    attendanceEnd.setHours(23, 59, 59, 999)
+    const todayKey = getTodayKstDateString(today)
+    const previousDates = getPreviousDateStrings(3, today)
+    const { start: attendanceStart } = getKstDateRange(previousDates[0])
+    const { end: attendanceEnd } = getKstDateRange(previousDates[previousDates.length - 1])
 
     const { data: attendanceRows } = await adminSupabase
       .from("attendance")
       .select("user_id, check_in_at")
       .in("user_id", memberIds)
-      .gte("check_in_at", attendanceStart.toISOString())
-      .lte("check_in_at", attendanceEnd.toISOString())
+      .gte("check_in_at", attendanceStart)
+      .lte("check_in_at", attendanceEnd)
 
     const attendanceMap = new Map<string, Set<string>>()
 
@@ -123,10 +123,19 @@ async function syncTrainerNotifications(
       attendanceMap.set(userId, current)
     }
 
-    const todayKey = formatKstDate(today)
     for (const memberId of memberIds) {
+      const dedupeKey = `attendance_absence:${memberId}:${todayKey}`
       const isAbsent = isThreeDayAbsence(attendanceMap.get(memberId) ?? new Set<string>(), today)
-      if (!isAbsent) continue
+      if (!isAbsent) {
+        await adminSupabase
+          .from("notifications")
+          .delete()
+          .eq("recipient_id", trainerId)
+          .eq("kind", "attendance_absence")
+          .eq("dedupe_key", dedupeKey)
+
+        continue
+      }
 
       await createNotificationIfNeeded(
         adminSupabase,
@@ -141,7 +150,7 @@ async function syncTrainerNotifications(
             memberId,
             date: todayKey,
           },
-          dedupeKey: `attendance_absence:${memberId}:${todayKey}`,
+          dedupeKey,
         },
         options.pushEnabled
       )

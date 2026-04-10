@@ -1,3 +1,5 @@
+const KST_OFFSET = "+09:00"
+
 export function formatKstDate(date: Date) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",
@@ -9,10 +11,16 @@ export function formatKstDate(date: Date) {
   return formatter.format(date)
 }
 
+function getKstAnchorDate(baseDate = new Date()) {
+  return new Date(`${formatKstDate(baseDate)}T12:00:00${KST_OFFSET}`)
+}
+
 export function getPreviousDateStrings(days: number, baseDate = new Date()) {
+  const anchorDate = getKstAnchorDate(baseDate)
+
   return Array.from({ length: days }, (_, index) => {
-    const next = new Date(baseDate)
-    next.setDate(baseDate.getDate() - (days - index))
+    const next = new Date(anchorDate)
+    next.setDate(anchorDate.getDate() - (days - index))
     return formatKstDate(next)
   })
 }
