@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Camera,
   CalendarDays,
@@ -14,7 +14,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react"
 import { ImageGallery } from "@/shared/ui/image-gallery"
-import { useMemberMeals, useTodayMeals, useUpdateMealFeedback } from "@/features/diet"
+import { useMarkMealReviewed, useMemberMeals, useTodayMeals, useUpdateMealFeedback } from "@/features/diet"
 import { useEnsureChatRoom, useSendChatMessage } from "@/features/chat"
 import type { MealType, MealWithProfile } from "@/entities/meal"
 import { toast } from "sonner"
@@ -124,7 +124,15 @@ function MealDetailDialog({
   const ensureChatRoom = useEnsureChatRoom()
   const sendChatMessage = useSendChatMessage()
   const updateMealFeedback = useUpdateMealFeedback()
+  const markMealReviewed = useMarkMealReviewed()
   const [feedbackDraft, setFeedbackDraft] = useState(meal?.trainerFeedback ?? "")
+  const [hasMarkedReviewed, setHasMarkedReviewed] = useState(false)
+
+  useEffect(() => {
+    if (!open || !meal || meal.reviewedAt || hasMarkedReviewed || markMealReviewed.isPending) return
+    setHasMarkedReviewed(true)
+    markMealReviewed.mutate(meal.id)
+  }, [hasMarkedReviewed, meal, markMealReviewed, open])
 
   async function handleSendFeedback() {
     if (!meal || !feedbackDraft.trim()) return

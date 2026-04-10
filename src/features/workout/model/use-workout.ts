@@ -8,6 +8,7 @@ import {
   getMemberWorkouts,
   getMyWorkouts,
   getTodayWorkouts,
+  markWorkoutReviewed,
   updateWorkout,
   updateWorkoutFeedback,
 } from "@/entities/workout"
@@ -74,6 +75,17 @@ export function useUpdateWorkoutFeedback() {
   return useMutation({
     mutationFn: ({ id, trainerFeedback }: { id: string; trainerFeedback: string }) =>
       updateWorkoutFeedback(id, trainerFeedback),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workout"] })
+    },
+  })
+}
+
+export function useMarkWorkoutReviewed() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => markWorkoutReviewed(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workout"] })
     },

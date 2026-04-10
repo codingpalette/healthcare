@@ -101,6 +101,7 @@ const useTodayMealsMock = vi.fn((date?: string) => ({
 const ensureChatRoomMock = vi.fn()
 const sendChatMessageMock = vi.fn()
 const updateMealFeedbackMock = vi.fn()
+const markMealReviewedMock = vi.fn()
 
 vi.mock("@/features/diet", () => ({
   useTodayMeals: (date?: string) => useTodayMealsMock(date),
@@ -110,6 +111,10 @@ vi.mock("@/features/diet", () => ({
   }),
   useUpdateMealFeedback: () => ({
     mutateAsync: updateMealFeedbackMock,
+    isPending: false,
+  }),
+  useMarkMealReviewed: () => ({
+    mutate: markMealReviewedMock,
     isPending: false,
   }),
 }))
@@ -143,6 +148,7 @@ describe("MealMemberTable", () => {
     sendChatMessageMock.mockResolvedValue(undefined)
     updateMealFeedbackMock.mockReset()
     updateMealFeedbackMock.mockResolvedValue(undefined)
+    markMealReviewedMock.mockReset()
   })
 
   afterEach(() => {
@@ -155,6 +161,7 @@ describe("MealMemberTable", () => {
 
     fireEvent.click(screen.getByText("홍길동"))
 
+    expect(markMealReviewedMock).toHaveBeenCalledWith("meal-1")
     expect(screen.getByText("홍길동 식단 인증 상세")).toBeInTheDocument()
     expect(screen.getAllByText("닭가슴살 샐러드").length).toBeGreaterThan(0)
     expect(screen.getByText("최근 7일 식단 기록")).toBeInTheDocument()

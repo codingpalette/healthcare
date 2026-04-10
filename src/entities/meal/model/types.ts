@@ -12,6 +12,7 @@ export interface Meal {
   fiber: number | null
   photoUrls: string[]
   trainerFeedback: string | null
+  reviewedAt?: string | null
   date: string
   createdAt: string
   updatedAt: string

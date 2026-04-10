@@ -14,6 +14,7 @@ function toWorkout(row: Record<string, unknown>): Workout {
     notes: (row.notes as string) ?? null,
     mediaUrls: (row.media_urls as string[]) ?? [],
     trainerFeedback: (row.trainer_feedback as string) ?? null,
+    reviewedAt: (row.reviewed_at as string) ?? null,
     date: row.date as string,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
@@ -216,6 +217,24 @@ export async function updateWorkoutFeedback(id: string, trainerFeedback: string)
   if (!res.ok) {
     const err = await res.json()
     throw new Error(err.error ?? "운동 피드백 저장에 실패했습니다")
+  }
+
+  const row = await res.json()
+  return toWorkout(row)
+}
+
+export async function markWorkoutReviewed(id: string): Promise<Workout> {
+  const accessToken = await getAccessToken()
+  const res = await fetch(`/api/workout/${id}/review`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error ?? "운동 확인 처리에 실패했습니다")
   }
 
   const row = await res.json()

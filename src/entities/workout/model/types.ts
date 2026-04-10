@@ -10,6 +10,7 @@ export interface Workout {
   notes: string | null
   mediaUrls: string[]
   trainerFeedback: string | null
+  reviewedAt?: string | null
   date: string
   createdAt: string
   updatedAt: string

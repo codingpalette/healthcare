@@ -18,8 +18,8 @@ import { cn } from "@/shared/lib/utils"
 export function PendingFeedbackCard() {
   const { data: meals, isLoading } = useTodayMeals()
   const { data: workouts, isLoading: isWorkoutLoading } = useTodayWorkouts()
-  const pendingDietCount = meals?.length ?? 0
-  const pendingWorkoutCount = workouts?.length ?? 0
+  const pendingDietCount = meals?.filter((meal) => !meal.reviewedAt).length ?? 0
+  const pendingWorkoutCount = workouts?.filter((workout) => !workout.reviewedAt).length ?? 0
   const totalPendingCount = pendingDietCount + pendingWorkoutCount
   const isLoadingAny = isLoading || isWorkoutLoading
 

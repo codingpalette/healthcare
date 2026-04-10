@@ -95,6 +95,7 @@ const useTodayWorkoutsMock = vi.fn((date?: string) => ({
 const mutateAsyncMock = vi.fn()
 const ensureChatRoomMock = vi.fn()
 const sendChatMessageMock = vi.fn()
+const markWorkoutReviewedMock = vi.fn()
 
 vi.mock("@/features/workout", () => ({
   useTodayWorkouts: (date?: string) => useTodayWorkoutsMock(date),
@@ -104,6 +105,10 @@ vi.mock("@/features/workout", () => ({
   }),
   useUpdateWorkoutFeedback: () => ({
     mutateAsync: mutateAsyncMock,
+    isPending: false,
+  }),
+  useMarkWorkoutReviewed: () => ({
+    mutate: markWorkoutReviewedMock,
     isPending: false,
   }),
 }))
@@ -132,6 +137,7 @@ describe("WorkoutMemberTable", () => {
     vi.setSystemTime(new Date("2026-03-12T12:00:00+09:00"))
     useTodayWorkoutsMock.mockClear()
     mutateAsyncMock.mockClear()
+    markWorkoutReviewedMock.mockClear()
     ensureChatRoomMock.mockReset()
     ensureChatRoomMock.mockResolvedValue({ id: "room-1" })
     sendChatMessageMock.mockReset()
@@ -148,6 +154,7 @@ describe("WorkoutMemberTable", () => {
 
     fireEvent.click(screen.getByText("홍길동"))
 
+    expect(markWorkoutReviewedMock).toHaveBeenCalledWith("workout-1")
     expect(screen.getByText("홍길동 운동 인증 상세")).toBeInTheDocument()
     expect(screen.getAllByText("마지막 세트가 힘들었습니다.").length).toBeGreaterThan(0)
     expect(screen.getByText("최근 7일 운동 기록")).toBeInTheDocument()

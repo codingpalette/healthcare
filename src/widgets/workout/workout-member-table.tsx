@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   CalendarDays,
   ChevronLeft,
@@ -22,6 +22,7 @@ import {
 } from "@/features/chat"
 import {
   useMemberWorkouts,
+  useMarkWorkoutReviewed,
   useTodayWorkouts,
   useUpdateWorkoutFeedback,
 } from "@/features/workout"
@@ -110,10 +111,18 @@ function WorkoutDetailDialog({
     historyFrom,
     selectedDate
   )
+  const markWorkoutReviewed = useMarkWorkoutReviewed()
   const updateWorkoutFeedback = useUpdateWorkoutFeedback()
   const ensureChatRoom = useEnsureChatRoom()
   const sendChatMessage = useSendChatMessage()
   const [feedback, setFeedback] = useState(workout?.trainerFeedback ?? "")
+  const [hasMarkedReviewed, setHasMarkedReviewed] = useState(false)
+
+  useEffect(() => {
+    if (!open || !workout || workout.reviewedAt || hasMarkedReviewed || markWorkoutReviewed.isPending) return
+    setHasMarkedReviewed(true)
+    markWorkoutReviewed.mutate(workout.id)
+  }, [hasMarkedReviewed, markWorkoutReviewed, open, workout])
 
   async function handleSaveFeedback() {
     if (!workout) return

@@ -5,5 +5,6 @@ export {
   getMemberMeals,
   updateMeal,
   updateMealFeedback,
+  markMealReviewed,
   deleteMeal,
 } from "./meal-api"

@@ -5,5 +5,6 @@ export {
   useCreateMeal,
   useUpdateMeal,
   useUpdateMealFeedback,
+  useMarkMealReviewed,
   useDeleteMeal,
 } from "./model"

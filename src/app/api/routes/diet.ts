@@ -414,3 +414,37 @@ dietRoutes.patch("/:id/feedback", async (c) => {
 
   return c.json(data)
 })
+
+dietRoutes.patch("/:id/review", async (c) => {
+  const userRole = c.get("userRole")
+  if (userRole !== "trainer" && userRole !== "admin") {
+    return c.json({ error: "트레이너만 확인 처리할 수 있습니다" }, 403)
+  }
+
+  const mealId = c.req.param("id")
+  const adminSupabase = createAdminSupabase()
+
+  const { data: existing, error: fetchError } = await adminSupabase
+    .from("meals")
+    .select("*")
+    .eq("id", mealId)
+    .single()
+
+  if (fetchError || !existing) {
+    return c.json({ error: "식단을 찾을 수 없습니다" }, 404)
+  }
+
+  if (existing.reviewed_at) {
+    return c.json(existing)
+  }
+
+  const { data, error } = await adminSupabase
+    .from("meals")
+    .update({ reviewed_at: new Date().toISOString() })
+    .eq("id", mealId)
+    .select()
+    .single()
+
+  if (error) return c.json({ error: error.message }, 400)
+  return c.json(data)
+})

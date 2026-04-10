@@ -7,4 +7,5 @@ export {
   useTodayWorkouts,
   useUpdateWorkout,
   useUpdateWorkoutFeedback,
+  useMarkWorkoutReviewed,
 } from "./model"

@@ -8,6 +8,7 @@ import {
   getMemberMeals,
   updateMeal,
   updateMealFeedback,
+  markMealReviewed,
   deleteMeal,
 } from "@/entities/meal"
 import type { MealInput } from "@/entities/meal"
@@ -84,6 +85,17 @@ export function useUpdateMealFeedback() {
   return useMutation({
     mutationFn: ({ id, trainerFeedback }: { id: string; trainerFeedback: string }) =>
       updateMealFeedback(id, trainerFeedback),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["diet"] })
+    },
+  })
+}
+
+export function useMarkMealReviewed() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => markMealReviewed(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["diet"] })
     },

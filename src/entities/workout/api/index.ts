@@ -6,5 +6,6 @@ export {
   getMemberWorkouts,
   updateWorkout,
   updateWorkoutFeedback,
+  markWorkoutReviewed,
   deleteWorkout,
 } from "./workout-api"
