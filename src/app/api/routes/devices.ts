@@ -22,6 +22,7 @@ devicesRoutes.get("/", async (c) => {
 /** 기기 등록 */
 devicesRoutes.post("/", async (c) => {
   const userId = c.get("userId")
+  const userRole = c.get("userRole")
   const supabase = createAuthorizedSupabase(c.req.header("Authorization")!)
   const body = await c.req.json<{
     deviceFingerprint: string
@@ -65,26 +66,28 @@ devicesRoutes.post("/", async (c) => {
     return c.json(data)
   }
 
-  // 기기 수 확인 (3대 제한)
-  const { count, error: countError } = await supabase
-    .from("user_devices")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-
-  if (countError) return c.json({ error: countError.message }, 400)
-
-  if ((count ?? 0) >= 3) {
-    const { data: devices } = await supabase
+  // 관리자는 기기 등록 제한 없이 사용 가능
+  if (userRole !== "admin") {
+    const { count, error: countError } = await supabase
       .from("user_devices")
-      .select("id, device_name, device_type, browser, os, last_active_at, created_at")
+      .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
-      .order("last_active_at", { ascending: false })
 
-    return c.json({
-      error: "기기 등록 한도 초과",
-      code: "DEVICE_LIMIT_EXCEEDED",
-      devices,
-    }, 409)
+    if (countError) return c.json({ error: countError.message }, 400)
+
+    if ((count ?? 0) >= 3) {
+      const { data: devices } = await supabase
+        .from("user_devices")
+        .select("id, device_name, device_type, browser, os, last_active_at, created_at")
+        .eq("user_id", userId)
+        .order("last_active_at", { ascending: false })
+
+      return c.json({
+        error: "기기 등록 한도 초과",
+        code: "DEVICE_LIMIT_EXCEEDED",
+        devices,
+      }, 409)
+    }
   }
 
   // 새 기기 등록
