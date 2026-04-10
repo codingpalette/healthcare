@@ -65,6 +65,42 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <head>
+        <style>{`
+          #app-launch-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483647;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            opacity: 1;
+            transition: opacity 240ms ease;
+          }
+
+          html[data-standalone="true"] #app-launch-screen {
+            display: flex;
+          }
+        `}</style>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                var isStandalone =
+                  window.matchMedia("(display-mode: standalone)").matches ||
+                  window.navigator.standalone === true;
+
+                if (!isStandalone) {
+                  return;
+                }
+
+                document.documentElement.dataset.standalone = "true";
+                document.documentElement.style.backgroundColor = "#ffffff";
+                document.documentElement.style.colorScheme = "light";
+              })();
+            `,
+          }}
+        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={APP_NAME} />
@@ -91,6 +127,64 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-2048x2732.png?v=3" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
       </head>
       <body style={{ backgroundColor: "#ffffff" }}>
+        <div id="app-launch-screen" aria-hidden="true">
+          <img
+            src="/appIcons/playstore.png"
+            alt=""
+            width="112"
+            height="112"
+            style={{ display: "block", width: 112, height: 112, objectFit: "contain" }}
+          />
+        </div>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                var launchScreen = document.getElementById("app-launch-screen");
+
+                if (!launchScreen || document.documentElement.dataset.standalone !== "true") {
+                  if (launchScreen) {
+                    launchScreen.remove();
+                  }
+                  return;
+                }
+
+                var hideLaunchScreen = function () {
+                  if (!launchScreen || launchScreen.dataset.closed === "true") {
+                    return;
+                  }
+
+                  launchScreen.dataset.closed = "true";
+                  launchScreen.style.opacity = "0";
+                  launchScreen.style.pointerEvents = "none";
+
+                  window.setTimeout(function () {
+                    launchScreen.remove();
+                  }, 260);
+                };
+
+                window.setTimeout(hideLaunchScreen, 4000);
+
+                if (document.readyState === "complete") {
+                  window.requestAnimationFrame(function () {
+                    window.setTimeout(hideLaunchScreen, 120);
+                  });
+                  return;
+                }
+
+                window.addEventListener(
+                  "load",
+                  function () {
+                    window.requestAnimationFrame(function () {
+                      window.setTimeout(hideLaunchScreen, 120);
+                    });
+                  },
+                  { once: true },
+                );
+              })();
+            `,
+          }}
+        />
         <ThemeProvider>
           <TooltipProvider>
             <QueryProvider>{children}</QueryProvider>
