@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import {
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -92,6 +93,19 @@ function formatWorkoutMeta(workout: Workout | WorkoutWithProfile) {
   ]
     .filter(Boolean)
     .join(" · ")
+}
+
+function ReviewStatusBadge({ reviewedAt }: { reviewedAt?: string | null }) {
+  if (reviewedAt) {
+    return (
+      <Badge className="gap-1 border-transparent bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+        <Check className="size-3.5" />
+        확인 완료
+      </Badge>
+    )
+  }
+
+  return <Badge variant="secondary">미확인</Badge>
 }
 
 function WorkoutDetailDialog({
@@ -409,6 +423,7 @@ export function WorkoutMemberTable() {
                 <TableRow>
                   <TableHead>회원</TableHead>
                   <TableHead>운동명</TableHead>
+                  <TableHead>확인</TableHead>
                   <TableHead>세트/횟수</TableHead>
                   <TableHead>운동 시간</TableHead>
                   <TableHead>칼로리</TableHead>
@@ -424,6 +439,9 @@ export function WorkoutMemberTable() {
                   >
                     <TableCell className="font-medium">{workout.userName}</TableCell>
                     <TableCell>{workout.exerciseName}</TableCell>
+                    <TableCell>
+                      <ReviewStatusBadge reviewedAt={workout.reviewedAt} />
+                    </TableCell>
                     <TableCell>{formatWorkoutMeta(workout) || "-"}</TableCell>
                     <TableCell>
                       {workout.durationMinutes != null ? `${workout.durationMinutes}분` : "-"}

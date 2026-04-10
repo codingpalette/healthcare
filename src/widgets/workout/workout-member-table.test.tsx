@@ -26,9 +26,28 @@ const todayWorkouts: WorkoutWithProfile[] = [
     notes: "마지막 세트가 힘들었습니다.",
     mediaUrls: ["https://example.com/workout-1.jpg"],
     trainerFeedback: "호흡을 더 길게 가져가세요.",
+    reviewedAt: null,
     date: "2026-03-12",
     createdAt: "2026-03-12T20:13:00+09:00",
     updatedAt: "2026-03-12T20:13:00+09:00",
+  },
+  {
+    id: "workout-4",
+    userId: "member-3",
+    userName: "박체크",
+    exerciseName: "레그프레스",
+    sets: 4,
+    reps: 12,
+    weight: 110,
+    durationMinutes: 35,
+    caloriesBurned: 240,
+    notes: "호흡을 일정하게 유지했습니다.",
+    mediaUrls: [],
+    trainerFeedback: null,
+    reviewedAt: "2026-03-12T20:30:00+09:00",
+    date: "2026-03-12",
+    createdAt: "2026-03-12T20:25:00+09:00",
+    updatedAt: "2026-03-12T20:25:00+09:00",
   },
 ]
 
@@ -46,6 +65,7 @@ const previousDayWorkouts: WorkoutWithProfile[] = [
     notes: "왼쪽 다리에 집중했습니다.",
     mediaUrls: [],
     trainerFeedback: null,
+    reviewedAt: null,
     date: "2026-03-11",
     createdAt: "2026-03-11T18:10:00+09:00",
     updatedAt: "2026-03-11T18:10:00+09:00",
@@ -65,6 +85,7 @@ const memberWorkouts: Workout[] = [
     notes: "마지막 세트가 힘들었습니다.",
     mediaUrls: ["https://example.com/workout-1.jpg"],
     trainerFeedback: "호흡을 더 길게 가져가세요.",
+    reviewedAt: null,
     date: "2026-03-12",
     createdAt: "2026-03-12T20:13:00+09:00",
     updatedAt: "2026-03-12T20:13:00+09:00",
@@ -81,6 +102,7 @@ const memberWorkouts: Workout[] = [
     notes: "허리 각도 유지가 잘 됐습니다.",
     mediaUrls: [],
     trainerFeedback: null,
+    reviewedAt: null,
     date: "2026-03-10",
     createdAt: "2026-03-10T19:05:00+09:00",
     updatedAt: "2026-03-10T19:05:00+09:00",
@@ -159,6 +181,17 @@ describe("WorkoutMemberTable", () => {
     expect(screen.getAllByText("마지막 세트가 힘들었습니다.").length).toBeGreaterThan(0)
     expect(screen.getByText("최근 7일 운동 기록")).toBeInTheDocument()
     expect(screen.getByText("데드리프트")).toBeInTheDocument()
+  })
+
+  it("운동 테이블에 확인 상태 컬럼을 보여준다", () => {
+    render(<WorkoutMemberTable />)
+
+    expect(screen.getByText("확인")).toBeInTheDocument()
+    expect(screen.getByText("확인 완료")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "이전 운동 인증 날짜" }))
+
+    expect(screen.getByText("미확인")).toBeInTheDocument()
   })
 
   it("이전 날짜로 이동하면 해당 날짜의 운동 인증 기록을 조회한다", () => {

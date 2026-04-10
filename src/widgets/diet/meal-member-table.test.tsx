@@ -33,8 +33,27 @@ const todayMeals: MealWithProfile[] = [
     fiber: null,
     photoUrls: ["https://example.com/meal-1.jpg"],
     trainerFeedback: "채소 구성이 좋아요.",
+    reviewedAt: null,
     createdAt: "2026-03-12T12:10:00+09:00",
     updatedAt: "2026-03-12T12:10:00+09:00",
+  },
+  {
+    id: "meal-4",
+    userId: "member-3",
+    userName: "박체크",
+    date: "2026-03-12",
+    mealType: "dinner",
+    description: "연어 포케",
+    calories: 510,
+    carbs: 42,
+    protein: 29,
+    fat: 18,
+    fiber: 7,
+    photoUrls: [],
+    trainerFeedback: null,
+    reviewedAt: "2026-03-12T19:00:00+09:00",
+    createdAt: "2026-03-12T18:40:00+09:00",
+    updatedAt: "2026-03-12T18:40:00+09:00",
   },
 ]
 
@@ -53,6 +72,7 @@ const previousDayMeals: MealWithProfile[] = [
     fiber: null,
     photoUrls: [],
     trainerFeedback: null,
+    reviewedAt: null,
     createdAt: "2026-03-11T18:10:00+09:00",
     updatedAt: "2026-03-11T18:10:00+09:00",
   },
@@ -72,6 +92,7 @@ const memberMeals: Meal[] = [
     fiber: null,
     photoUrls: ["https://example.com/meal-1.jpg"],
     trainerFeedback: "채소 구성이 좋아요.",
+    reviewedAt: null,
     createdAt: "2026-03-12T12:10:00+09:00",
     updatedAt: "2026-03-12T12:10:00+09:00",
   },
@@ -88,6 +109,7 @@ const memberMeals: Meal[] = [
     fiber: null,
     photoUrls: [],
     trainerFeedback: null,
+    reviewedAt: null,
     createdAt: "2026-03-11T18:30:00+09:00",
     updatedAt: "2026-03-11T18:30:00+09:00",
   },
@@ -166,6 +188,17 @@ describe("MealMemberTable", () => {
     expect(screen.getAllByText("닭가슴살 샐러드").length).toBeGreaterThan(0)
     expect(screen.getByText("최근 7일 식단 기록")).toBeInTheDocument()
     expect(screen.getByText("현미밥과 연어")).toBeInTheDocument()
+  })
+
+  it("식단 테이블에 확인 상태 컬럼을 보여준다", () => {
+    render(<MealMemberTable />)
+
+    expect(screen.getByText("확인")).toBeInTheDocument()
+    expect(screen.getByText("확인 완료")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "이전 식단 날짜" }))
+
+    expect(screen.getByText("미확인")).toBeInTheDocument()
   })
 
   it("이전 날짜로 이동하면 해당 날짜의 식단 기록을 조회한다", () => {

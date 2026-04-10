@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import {
   Camera,
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -102,6 +103,19 @@ function formatMacros(meal: { carbs: number | null; protein: number | null; fat:
   ]
     .filter(Boolean)
     .join(" · ")
+}
+
+function ReviewStatusBadge({ reviewedAt }: { reviewedAt?: string | null }) {
+  if (reviewedAt) {
+    return (
+      <Badge className="gap-1 border-transparent bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+        <Check className="size-3.5" />
+        확인 완료
+      </Badge>
+    )
+  }
+
+  return <Badge variant="secondary">미확인</Badge>
 }
 
 function MealDetailDialog({
@@ -414,6 +428,7 @@ export function MealMemberTable() {
                 <TableRow>
                   <TableHead>회원</TableHead>
                   <TableHead>식사</TableHead>
+                  <TableHead>확인</TableHead>
                   <TableHead>칼로리</TableHead>
                   <TableHead>기록 시간</TableHead>
                 </TableRow>
@@ -428,6 +443,9 @@ export function MealMemberTable() {
                     <TableCell className="font-medium">{meal.userName}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{MEAL_TYPE_LABEL[meal.mealType]}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <ReviewStatusBadge reviewedAt={meal.reviewedAt} />
                     </TableCell>
                     <TableCell>
                       {meal.calories != null ? `${meal.calories}kcal` : "-"}
