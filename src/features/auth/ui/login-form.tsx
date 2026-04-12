@@ -1,12 +1,14 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "@/features/auth/api"
 import { resolveEmail } from "@/shared/lib/resolve-email"
-import { Button } from "@/shared/ui/button"
+import { Button, buttonVariants } from "@/shared/ui/button"
 import { generateDeviceFingerprint, storeDeviceId } from "@/shared/lib/device-fingerprint"
 import { registerDevice, DeviceLimitError, DeviceLimitScreen, type Device } from "@/entities/device"
+import { cn } from "@/shared/lib/utils"
 import { parseDeviceInfo } from "../api/auth-api"
 
 export function LoginForm() {
@@ -114,6 +116,13 @@ export function LoginForm() {
       <Button type="submit" disabled={isLoading}>
         {isLoading ? "로그인 중..." : "로그인"}
       </Button>
+
+      <Link
+        href="/demo"
+        className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+      >
+        체험하기
+      </Link>
 
       {/* <p className="text-center text-sm text-gray-500">
         계정이 없으신가요?{" "}

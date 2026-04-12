@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createSupabaseMiddlewareClient } from "@/shared/api/supabase-middleware"
 
-const PUBLIC_ROUTES = ["/login", "/signup", "/api/health"]
+const PUBLIC_ROUTES = ["/login", "/signup", "/demo", "/api/health"]
 
 export async function proxy(request: NextRequest) {
   const { supabase, response } = createSupabaseMiddlewareClient(request)
